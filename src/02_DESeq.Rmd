@@ -4,7 +4,7 @@ output: html_document
 author: Julien Prados
 date: "2023-08-03"
 params:
-  bam_dir: "data/fastq/test"
+  bam_dir: "data/fastq/pilot"
   genome_dir: "data/ref/DdMm"
   outdir: "./"
 ---
@@ -37,8 +37,10 @@ gtf <- rtracklayer::import(
 	file.path(params$genome_dir,"genome.gtf"),
 	genome = metadata(x)$seqinfo,
 	feature.type="gene")
-rowData(x)$gene_biotype <- gtf$gene_biotype[match(rowData(x)$feature_id,gtf$gene_id)]
-rowData(x)$contig <- as.character(seqnames(gtf))[match(rowData(x)$feature_id,gtf$gene_id)]
+rowData(x) <- left_join(
+	as.data.frame(rowData(x)),
+	as.data.frame(gtf) |> select(feature_id=gene_id,contig=seqnames,gene_biotype,old_locus_tag),
+	by="feature_id",relationship="one-to-one")
 ```
 
 
@@ -46,10 +48,10 @@ rowData(x)$contig <- as.character(seqnames(gtf))[match(rowData(x)$feature_id,gtf
 # Add samples metadata
 ```{r,warning=FALSE}
 # Simplify library names
-x$lib <- sub("\\.[^\\.]*\\.ht2\\.bam","",x$lib)
+colnames(x) <- x$lib <- sub("_S._L..._.*","",x$lib)
 
 # Define conditions to compare
-x$cond <- sample(c("condA","condB"),size = ncol(x),replace = TRUE)
+x$cond <- local({set.seed(321);sample(c("condA","condB"),size = ncol(x),replace = TRUE)})
 
 # Alternatively load this metadata from an excel file 
 # colData(x) <- left_join(
@@ -65,32 +67,35 @@ x$cond <- sample(c("condA","condB"),size = ncol(x),replace = TRUE)
 x <- DESeqDataSet(x,design= ~ cond) |>
   DESeq()
 
-resultsNames(x)
+all_deseq_results <- list(
+	condAvsB = as.data.frame(results(x))
+) |>
+	map(~rownames_to_column(as.data.frame(.),"feature_id")) |>
+  bind_rows(.id = "comparison") |>
+  mutate(direction = case_when(
+    log2FoldChange >= +1 & padj <= 0.05 ~ "up",
+    log2FoldChange <= -1 & padj <= 0.05 ~ "down",
+    TRUE ~ "ns"
+  ))
 ```
 
-# PCA + HEATMAP
 
-
-
-
-
-# Volcano
+# Volcano plot
 ```{r}
-results(x) |>
-  as.data.frame() |>
-  rownames_to_column("gene") |>
+all_deseq_results |>
   ggplot(aes(x = log2FoldChange, y = -log10(padj))) +
-    geom_point() +
+		facet_wrap(~comparison) +
+    geom_point(aes(color=direction)) +
     geom_vline(xintercept = c(-1, 1),linetype = "dashed") +
     geom_hline(yintercept = -log10(0.05),linetype = "dashed") +
-    ggrepel::geom_text_repel(aes(label=gene), max.overlaps=10,data=\(x) filter(x,abs(log2FoldChange)>1 & padj<0.05)) +
+    ggrepel::geom_text_repel(aes(label=feature_id), max.overlaps=15,data=\(x) filter(x,!direction%in%"ns"),size=3) +
     theme_bw()
 ```
 
 
 
 
-# DESeq PCA and Heatmap sample distance
+# PCA and Heatmap
 ```{r}
 X <- rlogTransformation(x)
 plotPCA(X,"cond")
@@ -98,21 +103,8 @@ plotPCA(X,"cond")
 
 
 ```{r}
-assay(X) <- assay(X) - rowMeans(assay(X))
-X <- sample(X,1000)
-X <- X[hclust(dist(assay(X)),method="ward.D2")$order]
-
-assay(X) |>
-  as.data.frame() |>
-  rownames_to_column("gene_id") |>
-  mutate(gene_id=factor(gene_id,gene_id)) |>
-  pivot_longer(!gene_id) |>
-    ggplot() + 
-      geom_tile(aes(x=gene_id,y=name,fill=value)) + 
-      scale_fill_gradient2() + 
-      theme_void() + 
-      theme(axis.text.y = element_text(),panel.border = element_rect(fill=NA))
-heatmap(assay(X),Rowv = as.dendrogram(h),scale="none",col=colorRampPalette(c("blue","white","red"))(10))
+# Heatmap of 1000 randomly selected genes
+heatmap(assay(sample(X,1000)),scale="row",col=colorRampPalette(c("blue","white","red"))(11))
 ```
 
 
