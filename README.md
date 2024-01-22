@@ -25,17 +25,33 @@ git clone 'https://github.com/BioinfoSupport/rnaseq-pipeline.git' my_new_project
  
  4) Put your reference genome into subfolder `data/ref`.
  
- 5) Run the container
+ 5) Run the container: `docker compose up -d`
+
+ 6) Launch the pipeline within the container: `docker compose exec rnaseq GENOME=DdMm data/fastq/ALL`
+
+ 7) Alternatively connect to the Rstudio GUI running at URL http://localhost:8787
+
+
+
+# Directory structure
+
 ```
-docker compose up -d
+data/
+  ref/      folder containing reference genome subdirectories
+    DdMm/   a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium marinum_
+  fastq/    folder containing sequenced reads (.fastq.gz)
+    test/   example reads
+src/
+  00_data.R
+  01_qc.R
+.local/     hidden folder with pipeline scripts
 ```
 
-  6.1) Launch the pipeline within the container
-```
-docker compose exec rnaseq GENOME=DdMm data/fastq/ALL
-```
-	6.2) Alternatively connect to the Rstudio GUI running at URL http://localhost:8787
 
+# Running on a HPC cluster
+```
+singularity exec 'docker://unigebsp/ngs' bash
+```
 
 
 # Prepare a reference genome
@@ -60,26 +76,8 @@ build_ref_GRCm39-M34.sh data/ref/GRCm39-M34
 ```
 
 
-# Directory structure
-
-```
-data/
-  ref/      folder containing reference genome subdirectories
-    DdMm/   a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium marinum_
-  fastq/    folder containing sequenced reads (.fastq.gz)
-    test/   example reads
-src/
-  00_data.R
-  01_qc.R
-.local/     hidden folder with pipeline scripts
-```
 
 
-
-# Running on a HPC cluster
-```
-singularity exec 'docker://unigebsp/ngs' bash
-```
 
 
 # TODO
