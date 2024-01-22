@@ -7,3 +7,5 @@ _STARtmp/
 .star_index
 data/fastq
 data/ref
+*.html
+.Rhistory
