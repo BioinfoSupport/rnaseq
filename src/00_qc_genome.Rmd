@@ -1,0 +1,151 @@
+---
+title: "Genome QC"
+output: html_document
+date: "2023-08-03"
+params:
+  genome_dir: "data/ref/DdMm"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE)
+```
+
+
+```{r,message=FALSE}
+library(tidyverse)
+library(Rsamtools)
+
+contigs_stats <- function(fa) {
+	alphabetFrequency(getSeq(fa)) |> 
+		as.data.frame() |>
+		select(where(~any(.>0))) |>
+		mutate(contig = seqlevels(fa)) |>
+		full_join(enframe(seqlengths(fa),"contig","size"),by="contig")
+}
+
+genes_stats <- function(gtf) {
+	testthat::expect_identical(sum(is.na(gtf$gene_id)),0L)
+	
+	genomic <- gtf[gtf$type %in% "gene"] %>%
+		splitAsList(.,.$gene_id) |>
+		reduce() |>
+		width() |>
+		sum() |>
+		enframe("gene_id","genomic_bp")
+
+	exonic <- gtf[gtf$type %in% "exon"] %>%
+		splitAsList(.,.$gene_id) |>
+		reduce() |>
+		width() |>
+		sum() |>
+		enframe("gene_id","exonic_bp")
+	
+	cds <- gtf[gtf$type %in% "CDS"] %>%
+		splitAsList(.,.$gene_id) |>
+		reduce() |>
+		width() |>
+		sum() |>
+		enframe("gene_id","cds_bp")
+
+	
+	utr5 <- local({
+		gene <- splitAsList(gtf,gtf$gene_id)
+		cds_rg <- gene[relist(unlist(gene)$type,gene) %in% "CDS"] |> range()
+		psetdiff(unlist(range(gene)),resize(cds_rg,fix = "start",width = 1e7)) |> 
+			width() |> sum() |> 
+			enframe("gene_id","utr5_bp")
+	})
+	
+	as.data.frame(gtf) |>
+		mutate(genome = genome(gtf)[seqnames]) |>
+		select(genome,seqnames,gene_id) |>
+		distinct() |>
+		full_join(genomic,by="gene_id",relationship="one-to-one") |>
+		full_join(exonic,by="gene_id",relationship="one-to-one") |>
+		full_join(cds,by="gene_id",relationship="one-to-one") |>
+		full_join(utr5,by="gene_id",relationship="one-to-one")
+}
+```
+
+
+# Load data
+
+Name of the analysed genome: `r params$genome_dir`
+
+```{r}
+fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
+gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf"),genome=seqinfo(fa))
+genome(gtf) <- case_when(
+	seqlevels(gtf) %in% seqlevels(FaFile("data/ref/DdMm/Dd/genome.fasta")) ~ "Dd",
+	seqlevels(gtf) %in% seqlevels(FaFile("data/ref/DdMm/Mm/genome.fasta")) ~ "Mm",
+	TRUE ~ NA
+)
+```
+
+
+
+# Sequence statistics
+```{r}
+contigs_stats(fa) |>
+	mutate(genome=genome(gtf)) |>
+	relocate(genome,contig) |>
+	group_by(genome) |> 
+	summarise(across(!contig,sum),num_contig=n())
+```
+
+```{r}
+contigs_stats(fa) |>
+	mutate(genome=genome(gtf)) |>
+	relocate(genome,contig) |>
+	arrange(genome,desc(size))
+```
+
+
+
+# Features statistics
+```{r}
+as.data.frame(gtf) |>
+	mutate(genome=genome(gtf)[seqnames]) |>
+	group_by(genome,type) |>
+	summarize(n=n()) |>
+	pivot_wider(names_from = "genome",values_from = "n")
+```
+
+
+```{r}
+as.data.frame(gtf) |>
+	mutate(genome=genome(gtf)[seqnames]) |>
+	group_by(genome,seqnames,type) |>
+	summarize(n=n()) |>
+	pivot_wider(names_from = "type",values_from = "n") |>
+	arrange(genome,desc(gene))
+```
+
+
+# Overall genes stats
+```{r}
+genes_stats(gtf) |>
+	group_by(genome) |>
+	summarize(num_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE)))
+```
+
+
+# Coding genes stats
+```{r}
+genes_stats(gtf) |>
+	group_by(genome) |>
+	filter(cds_bp>0) |>
+	summarize(num_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE)))
+```
+
+
+
+
+
+
+
+
+
+
+
+

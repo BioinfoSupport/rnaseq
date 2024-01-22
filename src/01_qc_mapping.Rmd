@@ -1,0 +1,203 @@
+---
+title: "RNA-seq QC"
+output: html_document
+author: Julien Prados
+date: "2023-08-03"
+params:
+  bam_dir: "data/fastq/pilot"
+  genome_dir: "data/ref/DdMm"
+  outdir: "./"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r,message=FALSE,include=FALSE}
+source("src/lib_hisat2.R")
+```
+
+
+
+# Load quantification and assign genome
+```{r,echo=TRUE,include=FALSE}
+x <- file.path(params$bam_dir) |>
+	list.files(".ht2.bam$",recursive=TRUE,full.names=TRUE) |>
+	ht2_read_feature_counts()
+
+genome(metadata(x)$seqinfo) <- ifelse(seqlevels(metadata(x)$seqinfo) %in% c("NC_010612.1","NC_010604.1"),"Mm","Dd")
+
+gtf <- rtracklayer::import(
+	file.path(params$genome_dir,"genome.gtf"),
+	genome = metadata(x)$seqinfo,
+	feature.type="gene")
+rowData(x)$gene_biotype <- gtf$gene_biotype[match(rowData(x)$feature_id,gtf$gene_id)]
+rowData(x)$contig <- as.character(seqnames(gtf))[match(rowData(x)$feature_id,gtf$gene_id)]
+```
+
+
+
+# Total amount of mapped read
+```{r}
+colData(x) |>
+	as.data.frame() |>
+	as_tibble() |>
+	select(lib,sequenced,uniqmap,multimap,unmap) |>
+	mutate(mapped = uniqmap+multimap) |>
+  mutate(prop_mapped = mapped/sequenced) |>
+	knitr::kable(caption = "overall mapping statistics and alignment multiplicity")
+
+colData(x) |>
+	as.data.frame() |>
+	as_tibble() |>
+	select(lib,uniqmap,multimap,unmap) |>
+  pivot_longer(!lib) |>
+  ggplot(aes(y=lib)) +
+    geom_col(aes(x=value,fill=name),color="black") +
+    scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+    xlab("Number of read") + labs(fill="multiplicity") +
+    ggtitle("Number of sequenced read and mapping multiplicity") +
+    theme_bw() + theme(legend.position = "bottom")
+
+colData(x) |>
+	as.data.frame() |>
+	as_tibble() |>
+	select(lib,uniqmap,multimap,unmap) |>
+  pivot_longer(!lib) |>
+	group_by(lib) |>
+	mutate(pct = value / sum(value)) |>
+  ggplot(aes(y=lib)) +
+    geom_col(aes(x=pct,fill=name),color="black") +
+    scale_x_continuous(labels = scales::percent) +
+    xlab("Percent of sequenced read") + labs(fill="multiplicity") +
+    ggtitle("Read mapping multiplicity") +
+    theme_bw() + theme(legend.position = "bottom")
+#ggsave(file.path(params$outdir,"qc_mapped_read.pdf"),width=4,height=10)
+```
+
+# Amount of mapped read per genome
+```{r,message=FALSE}
+metadata(x)$chrom_stats |>
+	filter(count_type %in% "chromosomicU") |> 
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
+	group_by(lib,genome) |> 
+	summarize(count = sum(count)) |>
+	group_by(lib) |>
+	mutate(mapped = sum(count)) |>
+	mutate(prop=count/mapped) |>
+	pivot_wider(id_cols = c("lib","mapped"),names_from = "genome",values_from = c("count","prop")) |>
+	knitr::kable()
+```
+
+
+
+# Amount of mapped read per genome and location
+```{r,message=FALSE}
+S <- metadata(x)$chrom_stats |> 
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
+	group_by(lib,count_type,genome) |> 
+	summarize(count=sum(count)) |>
+	pivot_wider(id_cols = c("lib","genome"),names_from = count_type,values_from = "count") |>
+	group_by(lib) |>
+	mutate(
+		pct_intergenicU = (chromosomicU - genomicU)/sum(chromosomicU),
+		pct_intronicU = (genomicU - exonicU)/sum(chromosomicU),
+		pct_exonicU = exonicU/sum(chromosomicU)
+	)
+S |> knitr::kable()
+select(S,lib,genome,intergenic=pct_intergenicU,intronic=pct_intronicU,exonic=pct_exonicU) |>
+	pivot_longer(!c(lib,genome)) |>
+	ggplot(aes(y=genome)) +
+		facet_grid(lib~.) +
+		geom_col(aes(x=value,fill=name),color="black") +
+		scale_x_continuous(labels = scales::percent) +
+		theme(panel.spacing = unit(0,"mm"),strip.text.y = element_text(angle=0)) +
+		xlab("Percent mapped read") + ggtitle("Percent mapped read per organism and coding region")
+```
+
+# Amount of mapped read per chromosome
+```{r}
+metadata(x)$chrom_stats |> 
+	filter(count_type %in% "chromosomicU") |>
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
+	group_by(lib) |>
+	mutate(pct = count/sum(count)) |>
+	ggplot() +
+		facet_grid(lib~.) +
+		geom_point(aes(y=genome,x=feature_size,size=pct)) +
+		scale_size_area(labels=scales::percent) +
+		scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+		theme(panel.spacing = unit(0,"mm"),strip.text.y = element_text(angle=0)) +
+		xlab("Contig size") + ggtitle("Percentage of mapped read per contig") + labs(size="% mapped read")
+```
+
+
+
+
+## Amount of mapped read per feature type
+```{r,message=FALSE}
+A <- cbind(rowData(x)[c("feature_id","contig","gene_biotype")],counts=assay(x,"genomicU")) |>
+  as.data.frame() |>
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by="contig") |>
+  pivot_longer(starts_with("counts."),names_to = "lib") |>
+  filter(value>0) |>
+  group_by(lib,genome,gene_biotype) |>
+  summarise(n=sum(value)) |>
+  group_by(lib) |>
+  mutate(pct=n/sum(n)) |>
+  arrange(lib,desc(pct)) 
+
+ggplot(A,aes(y=gene_biotype)) + facet_wrap(~lib) +
+  geom_col(aes(x=pct,fill=genome),color="black",position = position_stack()) +
+  scale_x_continuous(labels = scales::percent) +
+  ggtitle("Fraction of mapped read per feature type") +
+  xlab("Number of mapped read") + labs(fill="genome") + ylab("feature type") +
+  theme_bw() + theme(legend.position = "bottom")
+```
+
+
+```{r,warning=FALSE}
+cbind(rowData(x)[c("feature_id","contig","gene_biotype")],counts=assay(x,"genomicU")) |>
+  as.data.frame() |>
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by="contig") |>
+  pivot_longer(starts_with("counts.")) |>
+  ggplot() + facet_wrap(~name) +
+    stat_ecdf(aes(x=value,color=genome)) +
+    xlab("read count") +
+    ylab("cumulative proportion of feature") + 
+    ggtitle("Read count per feature") + 
+    scale_y_continuous(labels = scales::percent) +
+    scale_x_log10() +
+    theme_classic() + theme(legend.position="bottom")
+```
+
+
+
+# Library strandness
+```{r}
+cbind(rowData(x)[c("feature_id","contig","gene_biotype")],
+			strand_bias = assay(x,"genomicS") - assay(x,"genomicA")) |>
+  as.data.frame() |>
+	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by="contig") |>
+	pivot_longer(starts_with("strand_bias."),names_to = "library") |>
+	group_by(library,genome) |>
+	summarize(sense=sum(value>=+10,na.rm=TRUE),antisense=sum(value<=-10,na.rm=TRUE),equal=sum(abs(value)<10,na.rm=TRUE)) |>
+	knitr::kable(caption = "Number of gene with a higher read count on sense/antisense strand")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

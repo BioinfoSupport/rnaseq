@@ -1,0 +1,11 @@
+
+
+
+#-#-#-#-#-#-#-#-#
+# SAMTOOLS rules
+#-#-#-#-#-#-#-#-#
+%.fasta.fai:%.fasta; samtools faidx "$<"
+%.bam.bai:%.bam; samtools index "$<" 
+%.bam.flagstat:%.bam; samtools flagstat "$<" > $@
+%.bam.idxstat:%.bam; samtools idxstat "$<" > $@
+

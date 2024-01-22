@@ -1,0 +1,9 @@
+.DS_*
+._.DS*
+._*
+_STARtmp/
+*.Rproj
+.Rproj.user
+.star_index
+data/fastq
+data/ref

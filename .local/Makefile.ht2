@@ -1,0 +1,52 @@
+
+
+NJOB ?= 3
+NCPU ?= 6
+GENOMEDIR ?= ./data/ref
+GENOME ?= DdMm
+#HISAT2_FLAGS ?= --rna-strandness R
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Shortcuts
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%.HT2 %/HT2
+%/HT2:%/
+	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB) -f $(LOCALDIR)/Makefile.ht2
+
+%.HT2:%.fastq.gz
+	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc"
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# HISAT2 rules
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+# Single-End mapping
+.PRECIOUS:%.$(GENOME).ht2.bam
+%.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%.fastq.gz $(GENOMEDIR)/$(GENOME)/ht2_index/
+	hisat2 $(HISAT2_FLAGS) \
+	        -p $(NCPU) --time \
+	        --new-summary --summary-file "$*.$(GENOME).ht2.stat" \
+	        --novel-splicesite-outfile "$*.$(GENOME).ht2.ss" \
+	        --omit-sec-seq \
+	        -x '$(GENOMEDIR)/$(GENOME)/ht2_index/index' \
+	        -U "$<" \
+	| samtools sort --threads $(NCPU) -o '$*.$(GENOME).ht2.bam' -
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Quantification rule
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PRECIOUS:%.$(GENOME).ht2.fc
+%.$(GENOME).ht2.fc:%.$(GENOME).ht2.bam
+	ht2_featurecount --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf' --out "$@" "$<"
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Imports
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+include $(LOCALDIR)/Makefile.samtools
+
+

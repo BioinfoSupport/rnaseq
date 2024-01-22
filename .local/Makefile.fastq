@@ -1,0 +1,16 @@
+
+NJOB ?= 3
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Shortcuts
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%/FASTQC
+%/FASTQC:%/
+	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/_fastqc.html/' | xargs $(MAKE) -j$(NJOB) -f $(LOCALDIR)/Makefile.fastq
+
+#-#-#-#-#-#-#-#-#
+# FASTQC rules
+#-#-#-#-#-#-#-#-#
+%_fastqc.html:%.fastq.gz; fastqc $< && rm -f "$*_fastqc.zip"
+
