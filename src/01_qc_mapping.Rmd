@@ -32,8 +32,10 @@ gtf <- rtracklayer::import(
 	file.path(params$genome_dir,"genome.gtf"),
 	genome = metadata(x)$seqinfo,
 	feature.type="gene")
-rowData(x)$gene_biotype <- gtf$gene_biotype[match(rowData(x)$feature_id,gtf$gene_id)]
-rowData(x)$contig <- as.character(seqnames(gtf))[match(rowData(x)$feature_id,gtf$gene_id)]
+rowData(x) <- left_join(
+	as.data.frame(rowData(x)),
+	as.data.frame(gtf) |> select(feature_id=gene_id,contig=seqnames,gene_biotype),
+	by="feature_id",relationship="one-to-one")
 ```
 
 
