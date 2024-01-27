@@ -41,6 +41,10 @@ docker compose exec rnaseq build_ref_GRCh38-r45.sh data/ref/GRCh38-r45
 docker compose exec rnaseq build_ref_GRCm39-M34.sh data/ref/GRCm39-M34
 
 
+
+
+
+
 docker run --rm -it -v "$PWD:/home/rstudio/workdir" unigebsp/rnaseq-pipeline bash -c 'build_ref_DdMm.sh /home/rstudio/workdir/data/ref/DdMm'
 
 
@@ -48,4 +52,9 @@ docker run --rm -it -v "$PWD:/home/rstudio/workdir" unigebsp/rnaseq-pipeline bas
 docker run --rm -it -v "$PWD:/home/rstudio/workdir" unigebsp/rnaseq-pipeline bash -c 'build_ref_DdMm.sh /home/rstudio/workdir/data/ref/DdMm'
 
 
+sbatch --time=8:00:00 --partition=shared-bigmem --ntasks=1 --cpus-per-task=6 --mem=256G <<EOF
+#!/bin/bash
+cd ~/scratch/rnaseq
+singularity exec 'docker://unigebsp/ngs:v1.0' env PATH=$PATH:./.local/bin build_ref_GRCh38-lm.sh
+EOF
 
