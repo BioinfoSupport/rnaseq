@@ -29,7 +29,7 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 
  6) Launch the pipeline within the container: `docker compose exec rnaseq GENOME=DdMm data/fastq/ALL`
 
- 7) Merge feature counts of multiple FASTQ: `./.local/bin/h2fc_merge --out-dir=out/data/DdMm data/fastq/*.DdMm.ht2.bam`
+ 7) Merge feature counts of multiple FASTQ: `./.local/bin/ht2fc_merge --out-dir=out/data/DdMm data/fastq/*.DdMm.ht2.bam`
  
  8) Alternatively connect to the Rstudio GUI running at URL http://localhost:8787
 
