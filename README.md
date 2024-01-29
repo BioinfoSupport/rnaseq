@@ -29,9 +29,7 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 
  6) Launch the pipeline within the container: `docker compose exec rnaseq GENOME=DdMm data/fastq/ALL`
 
- 7) Merge feature counts of multiple FASTQ: `./.local/bin/ht2fc_merge --out-dir=out/data/DdMm data/fastq/*.DdMm.ht2.bam`
- 
- 8) Alternatively connect to the Rstudio GUI running at URL http://localhost:8787
+ 7) Connect to the Rstudio GUI running at URL http://localhost:8787 and run notebooks in `src/`
 
 
 
@@ -51,6 +49,25 @@ src/
   02_DESeq.Rmd       Notebook with an example usage of the pipeline with DESeq2
   
 .local/     hidden folder with pipeline-specific scripts
+```
+
+
+# Useful commands
+```
+# Run the container 
+docker compose up -d
+
+# Run tests (requires reference genomes Dd,Mm,DdMm)
+docker compose exec rnaseq make test
+
+# Map and quantify all .fastq.gz files located in data/fastq/pilot
+docker compose exec rnaseq make data/fastq/pilot/ALL
+
+# Get a Bash in the container
+docker compose exec rnaseq bash
+
+# Stop the container
+docker compose down
 ```
 
 
