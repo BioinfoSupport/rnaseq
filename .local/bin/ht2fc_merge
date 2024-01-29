@@ -88,21 +88,31 @@ ht2_read_feature_counts <- function(bam_files,default_counts="genomicU") {
 	e
 }
 
+
+ht2_save <- function(x,dir) {
+	dir.create(dir,recursive = TRUE)
+	
+	saveRDS(x,file=file.path(dir,"robj.rds"))
+	write.csv(colData(x),file=file.path(dir,"colData.csv"))
+	write.csv(rowData(x),file=file.path(dir,"rowData.csv"))
+	
+	for(idx in assayNames(x)) {
+		write.csv(assay(x,idx),file=file.path(dir,sprintf("assay_%s.csv",idx)))
+	}
+	
+	for(idx in names(metadata(x))) {
+		write.csv(as.data.frame(metadata(x)[[idx]]),file=file.path(dir,sprintf("metadata_%s.csv",idx)))
+	}
+}
+
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-dir.create(opt$options$"out-dir",recursive = TRUE)
 x <- ht2_read_feature_counts(opt$args)
+ht2_save(x,opt$options$"out-dir")
 
-saveRDS(x,file=file.path(opt$options$"out-dir","robj.rds"))
-write.csv(colData(x),file=file.path(opt$options$"out-dir","colData.csv"))
-write.csv(rowData(x),file=file.path(opt$options$"out-dir","rowData.csv"))
 
-for(idx in assayNames(x)) {
-	write.csv(assay(x,idx),file=file.path(opt$options$"out-dir",sprintf("assay_%s.csv",idx)))
-}
 
-for(idx in names(metadata(x))) {
-	write.csv(as.data.frame(metadata(x)[[idx]]),file=file.path(opt$options$"out-dir",sprintf("metadata_%s.csv",idx)))
-}
+
+
 

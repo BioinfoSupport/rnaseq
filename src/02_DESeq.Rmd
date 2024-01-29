@@ -1,7 +1,6 @@
 ---
 title: "Differential expression analysis"
 output: html_document
-author: Julien Prados
 date: "2023-08-03"
 params:
   bam_dir: "data/fastq/pilot"
@@ -15,10 +14,12 @@ knitr::opts_chunk$set(echo = FALSE)
 
 
 ```{r,message=FALSE,include=FALSE}
+library(Rsamtools)
+library(SummarizedExperiment)
 library(DESeq2)
+library(tidyverse)
 #library(fgsea)
 #library(igraph)
-library(SummarizedExperiment)
 ```
 
 
@@ -28,7 +29,11 @@ library(SummarizedExperiment)
 x <- readRDS("out/data/DdMm/robj.rds")
 
 # Assign genome associated to each contig
-genome(metadata(x)$seqinfo) <- ifelse(seqlevels(metadata(x)$seqinfo) %in% c("NC_010612.1","NC_010604.1"),"Mm","Dd")
+genome(metadata(x)$seqinfo) <- case_when(
+	seqlevels(metadata(x)$seqinfo) %in% seqlevels(FaFile("data/ref/Dd/genome.fasta")) ~ "Dd",
+	seqlevels(metadata(x)$seqinfo) %in% seqlevels(FaFile("data/ref/Mm/genome.fasta")) ~ "Mm",
+	TRUE ~ NA
+)
 
 # Retreive gene_biotype and contig from GTF
 gtf <- rtracklayer::import(
