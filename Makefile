@@ -57,7 +57,7 @@ test:
 	
 
 %/CLEAN:
-	rm -f "$*"/*_fastqc.html "$*"/*.ht2.*
+	rm -rf "$*"/*_fastqc.html "$*"/*.ht2.*
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules

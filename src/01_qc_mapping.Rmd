@@ -23,7 +23,7 @@ library(tidyverse)
 
 # Load quantification and assign genome
 ```{r,echo=TRUE,include=FALSE}
-x <- readRDS("data/fastq/test/DdMm.quantif/robj.rds")
+x <- readRDS("data/fastq/test/DdMm.ht2.quantif/robj.rds")
 
 # Assign genome associated to each contig
 genome(metadata(x)$seqinfo) <- case_when(

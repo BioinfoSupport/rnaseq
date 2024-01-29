@@ -13,7 +13,7 @@ GENOME ?= DdMm
 .PHONY:%.HT2 %/HT2
 %/HT2:%/
 	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB) -f $(LOCALDIR)/Makefile.ht2
-	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 '$*/$(GENOME).quantif/'
+	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 '$*/$(GENOME).ht2.quantif/'
 
 %.HT2:%.fastq.gz
 	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc"
@@ -43,7 +43,7 @@ GENOME ?= DdMm
 %.$(GENOME).ht2.fc:%.$(GENOME).ht2.bam
 	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf' --out "$@" "$<"
 
-%/$(GENOME).quantif/:%/*.$(GENOME).ht2.bam
+%/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
 	ht2fc_merge --out-dir '$@' $^
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
