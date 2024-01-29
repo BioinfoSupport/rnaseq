@@ -30,6 +30,9 @@ docker compose up -d
 docker compose exec rnaseq make test
 docker compose exec rnaseq make data/fastq/pilot/ALL
 
+docker compose down
+
+
 # Get a Bash in the container
 docker compose exec rnaseq bash
 

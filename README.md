@@ -4,9 +4,9 @@
 # About
 This repository implements an RNA-seq pipeline, which is able to:
 
- 1. map reads in FASTQ.GZ format with HISAT2
- 2. quantify reads in a GTF file
- 3. produce Quality Control plots with R
+ 1. map reads in `.fastq.gz` format with HISAT2
+ 2. quantify gene expression
+ 3. produce quality control plots with R
 
 All required software are packaged into a (docker-)container which make it runnable on any platform.
 
@@ -16,7 +16,7 @@ All required software are packaged into a (docker-)container which make it runna
 
  1) Make sure `docker` (https://www.docker.com) is installed on your system and is running.
  
- 2) Download or clone the current repository.
+ 2) Download or clone the repository containing the pipeline.
 ```
 git clone 'https://github.com/BioinfoSupport/rnaseq-pipeline.git' my_new_project
 ```
