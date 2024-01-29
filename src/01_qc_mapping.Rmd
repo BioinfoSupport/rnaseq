@@ -15,19 +15,20 @@ knitr::opts_chunk$set(echo = FALSE)
 
 
 ```{r,message=FALSE,include=FALSE}
-source("src/lib_hisat2.R")
+library(SummarizedExperiment)
+library(tidyverse)
 ```
 
 
 
 # Load quantification and assign genome
 ```{r,echo=TRUE,include=FALSE}
-x <- file.path(params$bam_dir) |>
-	list.files(".ht2.bam$",recursive=TRUE,full.names=TRUE) |>
-	ht2_read_feature_counts()
+x <- readRDS("out/data/DdMm/robj.rds")
 
+# Assign genome associated to each contig
 genome(metadata(x)$seqinfo) <- ifelse(seqlevels(metadata(x)$seqinfo) %in% c("NC_010612.1","NC_010604.1"),"Mm","Dd")
 
+# Retreive gene_biotype and contig from GTF
 gtf <- rtracklayer::import(
 	file.path(params$genome_dir,"genome.gtf"),
 	genome = metadata(x)$seqinfo,

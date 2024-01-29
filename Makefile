@@ -51,11 +51,10 @@ usage:
 # testing
 #-#-#-#-#-#-#-#-#
 test:
-	$(MAKE) data/fastq/test/ALL
-	$(MAKE) GENOMEDIR=data/ref/DdMm GENOME=Mm data/fastq/test/ALL
-	$(MAKE) GENOMEDIR=data/ref/DdMm GENOME=Dd data/fastq/test/ALL
+	$(MAKE) GENOME=DdMm data/fastq/test/ALL
+	$(MAKE) GENOME=Mm data/fastq/test/ALL
+	$(MAKE) GENOME=Dd data/fastq/test/ALL
 	
-
 
 %/CLEAN:
 	rm -f "$*"/*_fastqc.html "$*"/*.ht2.*

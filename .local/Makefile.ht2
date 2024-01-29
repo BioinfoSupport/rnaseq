@@ -40,7 +40,7 @@ GENOME ?= DdMm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PRECIOUS:%.$(GENOME).ht2.fc
 %.$(GENOME).ht2.fc:%.$(GENOME).ht2.bam
-	ht2_featurecount --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf' --out "$@" "$<"
+	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf' --out "$@" "$<"
 
 
 

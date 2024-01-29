@@ -18,16 +18,14 @@ knitr::opts_chunk$set(echo = FALSE)
 library(DESeq2)
 #library(fgsea)
 #library(igraph)
-source("src/lib_hisat2.R")
+library(SummarizedExperiment)
 ```
 
 
 # Load quantification and add genes metadata
 ```{r,echo=TRUE,include=FALSE}
 # Load read counts
-x <- file.path(params$bam_dir) |>
-	list.files(".ht2.bam$",recursive=TRUE,full.names=TRUE) |>
-	ht2_read_feature_counts()
+x <- readRDS("out/data/DdMm/robj.rds")
 
 # Assign genome associated to each contig
 genome(metadata(x)$seqinfo) <- ifelse(seqlevels(metadata(x)$seqinfo) %in% c("NC_010612.1","NC_010604.1"),"Mm","Dd")
@@ -39,7 +37,7 @@ gtf <- rtracklayer::import(
 	feature.type="gene")
 rowData(x) <- left_join(
 	as.data.frame(rowData(x)),
-	as.data.frame(gtf) |> select(feature_id=gene_id,contig=seqnames,gene_biotype,old_locus_tag),
+	as.data.frame(gtf) |> select(feature_id=gene_id,contig=seqnames,gene_biotype,old_locus_tag,gene),
 	by="feature_id",relationship="one-to-one")
 ```
 
@@ -51,7 +49,7 @@ rowData(x) <- left_join(
 colnames(x) <- x$lib <- sub("_S._L..._.*","",x$lib)
 
 # Define conditions to compare
-x$cond <- local({set.seed(321);sample(c("condA","condB"),size = ncol(x),replace = TRUE)})
+x$cond <- local({set.seed(4321);sample(c("condA","condB","condC"),size = ncol(x),replace = TRUE)})
 
 # Alternatively load this metadata from an excel file 
 # colData(x) <- left_join(
@@ -68,7 +66,8 @@ x <- DESeqDataSet(x,design= ~ cond) |>
   DESeq()
 
 all_deseq_results <- list(
-	condAvsB = as.data.frame(results(x))
+	condAvsB = as.data.frame(results(x,contrast = c("cond","condA","condB"))),
+	condAvsC = as.data.frame(results(x,contrast = c("cond","condA","condC")))
 ) |>
 	map(~rownames_to_column(as.data.frame(.),"feature_id")) |>
   bind_rows(.id = "comparison") |>
