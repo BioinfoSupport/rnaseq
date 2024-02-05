@@ -27,7 +27,7 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
  
  5) Run the container: `docker compose up -d`
 
- 6) Launch the pipeline within the container: `docker compose exec rnaseq GENOME=DdMm data/fastq/ALL`
+ 6) Launch the pipeline within the container: `docker compose exec rnaseq make GENOME=DdMm data/fastq/ALL`
 
  7) Connect to the Rstudio GUI running at URL http://localhost:8787 and run notebooks in `src/`
 
