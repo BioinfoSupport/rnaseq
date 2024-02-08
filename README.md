@@ -22,12 +22,10 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 
  3) Copy your `.fastq.gz` files into subfolder `data/fastq/`. Note, you can download all FASTQ files sequenced by iGE3 genomic platform from the given link with:
 ```
-curl 'https://data.ige3.genomics.unige.ch/dataset/download/xxx.txt' | wget --content-disposition --trust-server-names -i /dev/stdin
+wget -P ./data/fastq --content-disposition --trust-server-names -i 'https://data.ige3.genomics.unige.ch/dataset/download/xxxxxxx.txt'
 ```
 
- 
- 4) Put your reference genome into subfolder `data/ref`. Genome archives can be 
-    found in our [`genomes` repository](https://github.com/BioinfoSupport/genomes/releases)
+ 4) [Optional] Put your reference genome folder into `data/ref`. Example genome folders can be found in our [`genomes` repository](https://github.com/BioinfoSupport/genomes/releases). If you are using a known reference genome, it will be downloaded automatically from the repository.
  
  5) Run the container: `docker compose up -d`
 
@@ -75,9 +73,9 @@ docker compose down
 ```
 
 
-# Running on a HPC cluster
+# Running the pipeline on a HPC cluster
 ```
-singularity exec 'docker://unigebsp/ngs:v1.1' bash
+singularity exec 'docker://unigebsp/ngs:v1.1' make GENOME=DdMm data/fastq/ALL
 ```
 
 
