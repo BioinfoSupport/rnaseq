@@ -32,13 +32,6 @@ usage:
 	@echo "    <dir>/FASTQC            Run fastqc on all .fastq.gz files in the directory (recursively)"
 	@echo "    <dir>/HT2               Map all .fastq.gz in the directory on the default genome (recursively)"	
 	@echo "    fqfile.HT2              Map a single .fastq.gz file on GENOME using HISAT2"
-#	@echo "Example local usage"
-#	@echo '    docker run -v "$(pwd):/data" -v "test/ref:/ref" unigebsp/rnaseq_pipeline GENOME=REF fqfile.star'
-#	@echo "Example usage on Baobab:"
-#	@echo "    # ask for a 16 cpu node for 8 hours"
-#	@echo "    salloc -p shared-cpu --time=8:00:00 --mem=64G -n1 --cpus-per-task=16"
-#	@echo "    # run the pipeline"
-#	@echo "    singularity run docker://unigebsp/rnaseq-pipeline"
 
 
 #-#-#-#-#-#-#-#-#
