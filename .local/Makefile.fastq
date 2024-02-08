@@ -7,7 +7,7 @@ NJOB ?= 3
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%/FASTQC
 %/FASTQC:%/
-	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/_fastqc.html/' | xargs $(MAKE) -j$(NJOB) -f $(LOCALDIR)/Makefile.fastq
+	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/_fastqc.html/' | xargs $(MAKE) -j$(NJOB)
 
 #-#-#-#-#-#-#-#-#
 # FASTQC rules

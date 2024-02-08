@@ -1,0 +1,12 @@
+
+
+GENOMEDIR ?= ./data/ref
+REF_DOWNLOAD_URL ?= https://github.com/BioinfoSupport/genomes/releases/download/v1.1
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Reference genome download
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+$(GENOMEDIR)/Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/Dd/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/DdMm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/DdMm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+

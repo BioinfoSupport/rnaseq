@@ -11,12 +11,12 @@ GENOME ?= DdMm
 # Shortcuts
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%.HT2 %/HT2
-%/HT2:%/
-	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB) -f $(LOCALDIR)/Makefile.ht2
-	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 '$*/$(GENOME).ht2.quantif/'
+%/HT2:%/ $(GENOMEDIR)/$(GENOME)/genome.fasta
+	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB)
+	$(MAKE) '$*/$(GENOME).ht2.quantif/'
 
 %.HT2:%.fastq.gz
-	$(MAKE) -f $(LOCALDIR)/Makefile.ht2 "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc"
+	$(MAKE) "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc"
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -25,7 +25,7 @@ GENOME ?= DdMm
 
 # Single-End mapping
 .PRECIOUS:%.$(GENOME).ht2.bam
-%.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%.fastq.gz $(GENOMEDIR)/$(GENOME)/ht2_index/
+%.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
 	hisat2 $(HISAT2_FLAGS) \
 	        -p $(NCPU) --time \
 	        --new-summary --summary-file "$*.$(GENOME).ht2.stat" \

@@ -44,8 +44,8 @@ usage:
 # testing
 #-#-#-#-#-#-#-#-#
 test:
-	$(MAKE) GENOME=DdMm data/fastq/test/ALL
 	$(MAKE) GENOME=Mm data/fastq/test/ALL
+	$(MAKE) GENOME=DdMm data/fastq/test/ALL
 	$(MAKE) GENOME=Dd data/fastq/test/ALL
 	
 
@@ -55,9 +55,10 @@ test:
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
-include $(LOCALDIR)/Makefile.samtools
 include $(LOCALDIR)/Makefile.ht2
+include $(LOCALDIR)/Makefile.samtools
 include $(LOCALDIR)/Makefile.fastq
+include $(LOCALDIR)/Makefile.ref
 
 
 
