@@ -10,3 +10,5 @@ $(GENOMEDIR)/Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Mm.tar.gz" | tar -C 
 $(GENOMEDIR)/Dd/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 $(GENOMEDIR)/DdMm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/DdMm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
+$(GENOMEDIR)/%/genome.fasta:;@echo "ERROR: No rule to make genome '$*' in directory '$(GENOMEDIR)'" && 1
+
