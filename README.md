@@ -20,7 +20,11 @@ This pipeline should be run in our [`ngs`](https://github.com/BioinfoSupport/ngs
 git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 ```
 
- 3) Copy your `.fastq.gz` files into subfolder `data/fastq/`.
+ 3) Copy your `.fastq.gz` files into subfolder `data/fastq/`. Note, you can download all FASTQ files sequenced by iGE3 genomic platform from the given link with:
+```
+curl 'https://data.ige3.genomics.unige.ch/dataset/download/xxx.txt' | wget --content-disposition --trust-server-names -i /dev/stdin
+```
+
  
  4) Put your reference genome into subfolder `data/ref`. Genome archives can be 
     found in our [`genomes` repository](https://github.com/BioinfoSupport/genomes/releases)
