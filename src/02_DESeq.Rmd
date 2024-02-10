@@ -29,11 +29,10 @@ library(tidyverse)
 x <- readRDS("data/fastq/test/DdMm.ht2.quantif/robj.rds")
 
 # Assign genome associated to each contig
-genome(metadata(x)$seqinfo) <- case_when(
-	seqlevels(metadata(x)$seqinfo) %in% seqlevels(FaFile("data/ref/Dd/genome.fasta")) ~ "Dd",
-	seqlevels(metadata(x)$seqinfo) %in% seqlevels(FaFile("data/ref/Mm/genome.fasta")) ~ "Mm",
-	TRUE ~ NA
-)
+if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
+	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",col.names=c("contig","genome"))
+	genome(metadata(x)$seqinfo) <- si$genome[match(seqlevels(metadata(x)$seqinfo),si$contig)]
+}
 
 # Retreive gene_biotype and contig from GTF
 gtf <- rtracklayer::import(
