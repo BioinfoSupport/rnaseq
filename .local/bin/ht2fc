@@ -35,38 +35,39 @@ suppressPackageStartupMessages({
 # General purpose read quantification
 # The GTF must have meta-columns gene_id and type
 # And type must contains "exon" and "gene" features
-gtf_features <- function(gtf) {
+gtf_features <- function(gtf,exon_types=c("exon","CDS"),gene_types="gene") {
+
 	features <- List(
 		chrom_chromosomicU = GRanges(seqinfo(gtf)) %>% splitAsList(.,seqnames(.)),
-		chrom_genomicU = gtf[gtf$type %in% "gene"] %>%
+		chrom_genomicU = gtf[gtf$type %in% gene_types] %>%
 			unstrand() %>% 
 			splitAsList(.,seqnames(.)) %>%
 			GenomicRanges::reduce(),
-		chrom_exonicU = gtf[gtf$type %in% "exon"] %>%
+		chrom_exonicU = gtf[gtf$type %in% exon_types] %>%
 			unstrand() %>% 
 			splitAsList(.,seqnames(.)) %>%
 			GenomicRanges::reduce(),
 
-		gene_genomicU = gtf[gtf$type %in% "gene"] %>%
+		gene_genomicU = gtf[gtf$type %in% gene_types] %>%
 			unstrand() %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce(),
-		gene_genomicS = gtf[gtf$type %in% "gene"] %>%
+		gene_genomicS = gtf[gtf$type %in% gene_types] %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce(),
-		gene_genomicA = gtf[gtf$type %in% "gene"] %>%
+		gene_genomicA = gtf[gtf$type %in% gene_types] %>%
 			invertStrand() %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce(),
 		
-		gene_exonicU = gtf[gtf$type %in% "exon"] %>%
+		gene_exonicU = gtf[gtf$type %in% exon_types] %>%
 			unstrand() %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce(),
-		gene_exonicS = gtf[gtf$type %in% "exon"] %>%
+		gene_exonicS = gtf[gtf$type %in% exon_types] %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce(),
-		gene_exonicA = gtf[gtf$type %in% "exon"] %>%
+		gene_exonicA = gtf[gtf$type %in% exon_types] %>%
 			invertStrand() %>%
 			splitAsList(.,.$gene_id) %>%
 			GenomicRanges::reduce()
