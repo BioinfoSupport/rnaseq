@@ -3,7 +3,7 @@
 NJOB ?= 3
 NCPU ?= 6
 GENOMEDIR ?= ./data/ref
-GENOME ?= DdMm
+GENOME ?= Dd+Mm
 #HISAT2_FLAGS ?= --rna-strandness R
 
 

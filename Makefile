@@ -5,7 +5,7 @@
 NJOB = 3
 NCPU = 6
 GENOMEDIR = ./data/ref
-GENOME = DdMm
+GENOME = Dd+Mm
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -45,7 +45,7 @@ usage:
 #-#-#-#-#-#-#-#-#
 test:
 	$(MAKE) GENOME=Mm data/fastq/test/ALL
-	$(MAKE) GENOME=DdMm data/fastq/test/ALL
+	$(MAKE) GENOME=Dd+Mm data/fastq/test/ALL
 	$(MAKE) GENOME=Dd data/fastq/test/ALL
 	
 

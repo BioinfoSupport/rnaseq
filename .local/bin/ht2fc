@@ -18,7 +18,6 @@ opt <- parse_args(OptionParser(
 if (is.null(opt$options$gtf) || is.null(opt$options$out)) stop("--gtf and --out arguments are required")
 if (!file.exists(opt$options$gtf)) stop("cannot find --gtf file")
 
-#opt <- list(options=list(gtf=normalizePath("~/Documents/docker/2023-05-17_hanna_rnaseq/data/ref/DdMm.gtf")),args=normalizePath("~/Documents/docker/2023-05-17_hanna_rnaseq/data/fastq/DAEZ01_S1_L003_R1_001.DdMm.ht2.bam"))
 
 
 

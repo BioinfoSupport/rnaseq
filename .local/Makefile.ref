@@ -8,7 +8,11 @@ REF_DOWNLOAD_URL ?= https://github.com/BioinfoSupport/genomes/releases/download/
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 $(GENOMEDIR)/Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 $(GENOMEDIR)/Dd/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/DdMm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/DdMm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/GRCh38-r45/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/GRCm39-M34/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
 $(GENOMEDIR)/%/genome.fasta:;@echo "ERROR: No rule to make genome '$*' in directory '$(GENOMEDIR)'" && 1
 

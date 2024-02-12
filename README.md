@@ -29,7 +29,7 @@ wget -P ./data/fastq --content-disposition --trust-server-names -i 'https://data
  
  5) Run the container: `docker compose up -d`
 
- 6) Launch the pipeline within the container: `docker compose exec rnaseq make GENOME=DdMm data/fastq/ALL`
+ 6) Launch the pipeline within the container: `docker compose exec rnaseq make GENOME=Dd+Mm data/fastq/ALL`
 
  7) Connect to the Rstudio GUI running at URL http://localhost:8787 and run notebooks in `src/`
 
@@ -41,7 +41,7 @@ wget -P ./data/fastq --content-disposition --trust-server-names -i 'https://data
 ```
 data/
   ref/      folder containing reference genome subdirectories
-    DdMm/   a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium marinum_
+    Dd+Mm/   a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium marinum_
   fastq/    folder containing sequenced reads (.fastq.gz)
     test/   example reads
     
@@ -59,7 +59,7 @@ src/
 # Run the container 
 docker compose up -d
 
-# Run tests (requires reference genomes Dd,Mm,DdMm)
+# Run tests (requires reference genomes Dd,Mm,Dd+Mm)
 docker compose exec rnaseq make test
 
 # Map and quantify all .fastq.gz files located in data/fastq/pilot
@@ -75,7 +75,7 @@ docker compose down
 
 # Running the pipeline on a HPC cluster
 ```
-singularity exec 'docker://unigebsp/ngs:v1.1' make GENOME=DdMm data/fastq/ALL
+singularity exec 'docker://unigebsp/ngs:v1.1' make GENOME=Dd+Mm data/fastq/ALL
 ```
 
 

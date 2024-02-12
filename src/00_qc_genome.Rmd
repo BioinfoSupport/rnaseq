@@ -3,7 +3,7 @@ title: "Genome QC"
 output: html_document
 date: "2023-08-03"
 params:
-  genome_dir: "data/ref/DdMm"
+  genome_dir: "data/ref/Dd+Mm"
 ---
 
 ```{r setup, include=FALSE}
