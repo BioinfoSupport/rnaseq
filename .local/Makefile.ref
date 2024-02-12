@@ -11,8 +11,8 @@ $(GENOMEDIR)/Dd/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C 
 $(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 $(GENOMEDIR)/GRCh38-r45/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 $(GENOMEDIR)/GRCm39-M34/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/GRCh38+lm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38+lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/lm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
 $(GENOMEDIR)/%/genome.fasta:;@echo "ERROR: No rule to make genome '$*' in directory '$(GENOMEDIR)'" && 1
 

@@ -36,7 +36,7 @@ if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
 
 # Retreive gene_biotype and contig from GTF
 gtf <- rtracklayer::import(
-	file.path(params$genome_dir,"genome.gtf"),
+	file.path(params$genome_dir,"genome.gtf.gz"),
 	genome = metadata(x)$seqinfo,
 	feature.type="gene")
 rowData(x) <- left_join(

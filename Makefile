@@ -17,8 +17,10 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Help rule
+# Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:usage %/all %/clean test
+
 usage:
 	@echo "usage: rnaseq <option> target"
 	@echo "options:" 
@@ -28,29 +30,23 @@ usage:
 	@echo "    GENOMEDIR='path'  Directory containing the reference genomes [$(GENOMEDIR)]"
 	@echo "    GENOME='path'     Default reference genome [$(GENOME)]"
 	@echo "targets:"
-	@echo "    <dir>/ALL               Run <dir>/FASTQC and <dir>/HT2"
+	@echo "    <dir>/all               Run <dir>/FASTQC and <dir>/HT2"
 	@echo "    <dir>/FASTQC            Run fastqc on all .fastq.gz files in the directory (recursively)"
 	@echo "    <dir>/HT2               Map all .fastq.gz in the directory on the default genome (recursively)"	
 	@echo "    fqfile.HT2              Map a single .fastq.gz file on GENOME using HISAT2"
 
-
-#-#-#-#-#-#-#-#-#
-# Main rule
-#-#-#-#-#-#-#-#-#
-%/ALL:
+%/all:
 	$(MAKE) "$*"/FASTQC "$*"/HT2
 
-#-#-#-#-#-#-#-#-#
-# testing
-#-#-#-#-#-#-#-#-#
+%/clean:
+	rm -rf "$*"/*_fastqc.html "$*"/*.ht2.*
+
 test:
-	$(MAKE) GENOME=Mm data/fastq/test/ALL
-	$(MAKE) GENOME=Dd+Mm data/fastq/test/ALL
-	$(MAKE) GENOME=Dd data/fastq/test/ALL
+	$(MAKE) GENOME=Mm data/fastq/test/all
+	$(MAKE) GENOME=Dd+Mm data/fastq/test/all
+	$(MAKE) GENOME=Dd data/fastq/test/all
 	
 
-%/CLEAN:
-	rm -rf "$*"/*_fastqc.html "$*"/*.ht2.*
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules

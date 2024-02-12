@@ -74,7 +74,7 @@ Name of the analysed genome: `r params$genome_dir`
 
 ```{r}
 fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
-gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf"),genome=seqinfo(fa))
+gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa))
 
 if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
 	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",col.names=c("contig","genome"))

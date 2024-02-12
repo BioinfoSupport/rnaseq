@@ -41,7 +41,7 @@ GENOME ?= Dd+Mm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PRECIOUS:%.$(GENOME).ht2.fc
 %.$(GENOME).ht2.fc:%.$(GENOME).ht2.bam
-	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf' --out "$@" "$<"
+	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
 
 %/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
 	ht2fc_merge --out-dir '$@' $^
