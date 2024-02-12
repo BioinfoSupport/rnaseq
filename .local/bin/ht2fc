@@ -39,12 +39,28 @@ gtf_features <- function(gtf,exon_types=c("exon","CDS"),gene_types="gene") {
 
 	features <- List(
 		chrom_chromosomicU = GRanges(seqinfo(gtf)) %>% splitAsList(.,seqnames(.)),
+		
 		chrom_genomicU = gtf[gtf$type %in% gene_types] %>%
 			unstrand() %>% 
 			splitAsList(.,seqnames(.)) %>%
 			GenomicRanges::reduce(),
+		chrom_genomicS = gtf[gtf$type %in% gene_types] %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_genomicA = gtf[gtf$type %in% gene_types] %>%
+			invertStrand() %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		
 		chrom_exonicU = gtf[gtf$type %in% exon_types] %>%
 			unstrand() %>% 
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_exonicS = gtf[gtf$type %in% exon_types] %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_exonicA = gtf[gtf$type %in% exon_types] %>%
+			invertStrand() %>% 
 			splitAsList(.,seqnames(.)) %>%
 			GenomicRanges::reduce(),
 
