@@ -1,7 +1,7 @@
 
 
 GENOMEDIR ?= ./data/ref
-REF_DOWNLOAD_URL ?= https://github.com/BioinfoSupport/genomes/releases/download/v1.1
+REF_DOWNLOAD_URL ?= https://github.com/BioinfoSupport/genomes/releases/download/v2.0
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Reference genome download
