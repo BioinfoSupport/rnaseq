@@ -77,7 +77,7 @@ fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
 gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa))
 
 if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
-	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",col.names=c("contig","genome"))
+	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",header=TRUE)
 	genome(gtf) <- si$genome[match(seqlevels(gtf),si$contig)]
 }
 ```

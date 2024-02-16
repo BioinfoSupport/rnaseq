@@ -27,7 +27,7 @@ x <- readRDS(params$quantif_rds)
 
 # Assign genome associated to each contig
 if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
-	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",col.names=c("contig","genome"))
+	si <- read.table(file.path(params$genome_dir,"seqinfo.tsv"),sep="\t",header=TRUE)
 	genome(metadata(x)$seqinfo) <- si$genome[match(seqlevels(metadata(x)$seqinfo),si$contig)]
 }
 
