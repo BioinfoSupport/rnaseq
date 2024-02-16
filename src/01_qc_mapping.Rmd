@@ -3,7 +3,7 @@ title: "RNA-seq QC"
 output: html_document
 date: "2023-08-03"
 params:
-  bam_dir: "data/fastq/pilot"
+  quantif_rds: "data/fastq/test/Dd+Mm.ht2.quantif/robj.rds"
   genome_dir: "data/ref/Dd+Mm"
   outdir: "./"
 ---
@@ -23,7 +23,7 @@ library(tidyverse)
 
 # Load quantification and assign genome
 ```{r,echo=TRUE,include=FALSE}
-x <- readRDS("data/fastq/test/Dd+Mm.ht2.quantif/robj.rds")
+x <- readRDS(params$quantif_rds)
 
 # Assign genome associated to each contig
 if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
