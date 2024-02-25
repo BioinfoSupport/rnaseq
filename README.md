@@ -15,7 +15,7 @@ This pipeline should be run in our [`ngs`](https://github.com/BioinfoSupport/ngs
 
  1) Make sure `docker` (https://www.docker.com) is installed on your system and is running.
 
- 2) [Download](releases/) this repository containing the rnaseq pipeline. Alternatively clone it with the command:
+ 2) [Download](https://github.com/BioinfoSupport/rnaseq/releases) this repository containing the rnaseq pipeline. Alternatively clone it with the command:
 ```
 git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 ```
@@ -35,9 +35,10 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 ```
 data/
   | ref/      folder containing reference genome subdirectories. 
-  | | Dd+Mm/  a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium marinum_. Example genome folders can be found in our
-  | |         [`genomes` repository](https://github.com/BioinfoSupport/genomes/releases). If you are using a known reference genome, it will be downloaded
-  | |         automatically from the repository.
+  | | Dd+Mm/  a reference genome folder for _Dictyostelium discoideum_ and _Mycobacterium
+  | |         marinum_. Example genome folders can be found in our [`genomes` repository]
+  | |         (https://github.com/BioinfoSupport/genomes/releases). If you are using a
+  | |         known reference genome, it will be downloaded automatically from this repository.
   | fastq/    folder containing sequenced reads (.fastq.gz)
   | | test/   example FASTQ reads
 src/
