@@ -15,18 +15,18 @@ This pipeline should be run in our [`ngs`](https://github.com/BioinfoSupport/ngs
 
  1) Make sure `docker` (https://www.docker.com) is installed on your system and is running.
 
- 2) [Download](https://github.com/BioinfoSupport/rnaseq/releases) this repository containing the rnaseq pipeline. Alternatively clone it with the command:
+ 2) Download source code of [this repository](https://github.com/BioinfoSupport/rnaseq/releases) containing the rnaseq pipeline. Alternatively, if git is installed on your system, clone it with the command:
 ```
 git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
 ```
 
  3) Run the container: `docker compose up -d`
 
- 4) Connect to the Rstudio GUI running at URL http://localhost:8787 and run notebooks in `src/`
+ 4) Connect to RStudio GUI running within the container at URL http://localhost:8787
   
  5) Run app.R to download FASTQ files from iGE3 genomic platform and run quantification. Alternatively copy your `.fastq.gz` files into subfolder `data/fastq/`.
 
-
+ 6) Run notebooks in `src/` to generqte QC reports
  
 
 
