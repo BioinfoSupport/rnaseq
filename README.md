@@ -75,7 +75,7 @@ docker compose down
 
 # Running the pipeline on a HPC cluster
 ```
-singularity exec 'docker://unigebsp/ngs:v1.1' make GENOME=Dd+Mm data/fastq/ALL
+singularity exec 'docker://unigebsp/ngs' make GENOME=Dd+Mm data/fastq/ALL
 ```
 
 
