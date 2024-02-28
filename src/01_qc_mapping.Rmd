@@ -3,7 +3,7 @@ title: "RNA-seq QC"
 output: html_document
 date: "2023-08-03"
 params:
-  quantif_rds: "data/fastq/test/Dd+Mm.ht2.quantif/robj.rds"
+  quantif_rds: "data/fastq/pilot/Dd+Mm.ht2.quantif/robj.rds"
   genome_dir: "data/ref/Dd+Mm"
   outdir: "./"
 ---
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(Rsamtools)
 library(SummarizedExperiment)
 library(tidyverse)
+options(dplyr.print_max = 1e3)
 ```
 
 
@@ -138,6 +139,24 @@ metadata(x)$chrom_stats |>
 		xlab("Contig size") + ggtitle("Percentage of mapped read per contig") + labs(size="% mapped read")
 ```
 
+```{r}
+local({
+	D <- metadata(x)$chrom_stats |> 
+		pivot_wider(id_cols = c("lib","feature_type","feature_id"),names_from = "count_type",values_from = c("count","feature_size")) |>
+		inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
+		mutate(pct_genomicU = count_genomicU/count_chromosomicU) |>
+		mutate(pct_exonicU = count_exonicU/count_chromosomicU) |>
+		arrange(feature_id,lib)
+	
+	print(D)
+	
+	ggplot(D) +
+		facet_grid(genome~lib,scales = "free_y",space = "free_y") + 
+		geom_col(aes(y=feature_id,x=count_chromosomicU,fill="intergenic"),color="black") +
+		geom_col(aes(y=feature_id,x=count_genomicU,fill="genomic"),color="black") +
+		geom_col(aes(y=feature_id,x=count_exonicU,fill="exonic"),color="black",position = position_fill())
+})
+```
 
 
 

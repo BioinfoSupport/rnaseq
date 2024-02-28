@@ -8,6 +8,7 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,warning = FALSE)
+options(dplyr.print_max = 1e3)
 ```
 
 
