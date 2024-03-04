@@ -99,7 +99,7 @@ metadata(x)$chrom_stats |>
 
 
 
-# Amount of mapped read per genome and location
+# Amount of mapped read per genome and location {.tabset}
 ```{r,message=FALSE}
 S <- metadata(x)$chrom_stats |> 
 	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
@@ -112,7 +112,10 @@ S <- metadata(x)$chrom_stats |>
 		pct_intronicU = (genomicU - exonicU)/sum(chromosomicU),
 		pct_exonicU = exonicU/sum(chromosomicU)
 	)
-S |> knitr::kable()
+```
+
+## Plots
+```{r,message=FALSE}
 select(S,lib,genome,intergenic=pct_intergenicU,intronic=pct_intronicU,exonic=pct_exonicU) |>
 	pivot_longer(!c(lib,genome)) |>
 	ggplot(aes(y=genome)) +
@@ -123,8 +126,16 @@ select(S,lib,genome,intergenic=pct_intergenicU,intronic=pct_intronicU,exonic=pct
 		xlab("Percent mapped read") + ggtitle("Percent mapped read per organism and coding region")
 ```
 
-# Amount of mapped read per chromosome
+## Table
 ```{r}
+S |> knitr::kable()
+```
+
+
+# Amount of mapped read per chromosome {.tabset}
+
+## Plots
+```{r fig.height=6, fig.width=15}
 metadata(x)$chrom_stats |> 
 	filter(count_type %in% "chromosomicU") |>
 	inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
@@ -140,27 +151,31 @@ metadata(x)$chrom_stats |>
 ```
 
 ```{r}
-local({
-	D <- metadata(x)$chrom_stats |> 
+per_contig_stat <- metadata(x)$chrom_stats |> 
 		pivot_wider(id_cols = c("lib","feature_type","feature_id"),names_from = "count_type",values_from = c("count","feature_size")) |>
 		inner_join(rownames_to_column(as.data.frame(metadata(x)$seqinfo),"contig"),by=c("feature_id"="contig")) |>
 		mutate(pct_genomicU = count_genomicU/count_chromosomicU) |>
 		mutate(pct_exonicU = count_exonicU/count_chromosomicU) |>
 		arrange(feature_id,lib)
-	
-	print(D)
-	
-	ggplot(D) +
+```
+
+
+```{r fig.height=6, fig.width=15}
+ggplot(per_contig_stat) +
 		facet_grid(genome~lib,scales = "free_y",space = "free_y") + 
 		geom_col(aes(y=feature_id,x=count_chromosomicU,fill="intergenic"),color="black") +
 		geom_col(aes(y=feature_id,x=count_genomicU,fill="genomic"),color="black") +
 		geom_col(aes(y=feature_id,x=count_exonicU,fill="exonic"),color="black",position = position_fill())
-})
 ```
 
+## Table
+```{r}
+knitr::kable(per_contig_stat)
+```
 
+## {-}
 
-## Amount of mapped read per feature type
+# Amount of mapped read per feature type
 ```{r,message=FALSE}
 A <- cbind(rowData(x)[c("feature_id","contig","gene_biotype")],counts=assay(x,"genomicU")) |>
   as.data.frame() |>
