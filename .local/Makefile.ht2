@@ -16,7 +16,7 @@ GENOME ?= Dd+Mm
 	$(MAKE) '$*/$(GENOME).ht2.quantif/'
 
 %.HT2:%.fastq.gz
-	$(MAKE) "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc"
+	$(MAKE) "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc" "$*.$(GENOME).ht2.tpm" "$*.$(GENOME).ht2.rf.tpm" "$*.$(GENOME).ht2.fr.tpm"
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -45,6 +45,21 @@ GENOME ?= Dd+Mm
 
 %/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
 	ht2fc_merge --out-dir '$@' $^
+
+# Stringtie commands to compute TPM
+.PRECIOUS:%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm
+%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm:SHELL=bash
+
+%.$(GENOME).ht2.tpm.gtf:$(GENOMEDIR)/$(GENOME)/genome.gtf.gz
+	zcat "$<" | awk '!/transcript_id ""/' > $@
+%.$(GENOME).ht2.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.tpm=%.tpm.gtf)" "$<"
+%.$(GENOME).ht2.rf.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie --rf -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.rf.tpm=%.tpm.gtf)" "$<"
+%.$(GENOME).ht2.fr.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie --fr -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.fr.tpm=%.tpm.gtf)" "$<"
+
+
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Imports

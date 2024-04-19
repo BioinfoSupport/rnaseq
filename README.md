@@ -51,7 +51,7 @@ src/
 
 
 # Useful commands
-```
+```bash
 # Run the container 
 docker compose up -d
 
