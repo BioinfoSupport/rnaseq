@@ -53,11 +53,11 @@ GENOME ?= Dd+Mm
 %.$(GENOME).ht2.tpm.gtf:$(GENOMEDIR)/$(GENOME)/genome.gtf.gz
 	zcat "$<" | awk '!/transcript_id ""/' > $@
 %.$(GENOME).ht2.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.tpm=%.tpm.gtf)" "$<"
+	stringtie -p$(NCPU) -A "$@" -eG "$(@:%.tpm=%.tpm.gtf)" "$<" > /dev/null
 %.$(GENOME).ht2.rf.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie --rf -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.rf.tpm=%.tpm.gtf)" "$<"
+	stringtie --rf -p$(NCPU) -A "$@" -eG "$(@:%.rf.tpm=%.tpm.gtf)" "$<" > /dev/null
 %.$(GENOME).ht2.fr.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie --fr -o /dev/null -p$(NCPU) -A "$@" -eG "$(@:%.fr.tpm=%.tpm.gtf)" "$<"
+	stringtie --fr -p$(NCPU) -A "$@" -eG "$(@:%.fr.tpm=%.tpm.gtf)" "$<" > /dev/null
 
 
 
