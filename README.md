@@ -1,6 +1,5 @@
 
 
-
 # About
 This repository implements an RNA-seq pipeline, which is able to:
 
@@ -26,7 +25,7 @@ git clone 'https://github.com/BioinfoSupport/rnaseq.git' my_new_project
   
  5) Run app.R to download FASTQ files from iGE3 genomic platform and run quantification. Alternatively copy your `.fastq.gz` files into subfolder `data/fastq/`.
 
- 6) Run notebooks in `src/` to generqte QC reports
+ 6) Run notebooks in `src/` to generate QC reports
  
 
 
@@ -59,10 +58,10 @@ docker compose up -d
 docker compose exec rnaseq make test
 
 # Map and quantify all .fastq.gz files located in data/fastq/pilot
-docker compose exec rnaseq make data/fastq/pilot/ALL
+docker compose exec rnaseq make data/fastq/pilot/all
 
 # Run alignment and quantification on FASTQ in folder data/fastq on genome Dd+Mm (with automatic download of the genome)
-docker compose exec rnaseq make GENOME=Dd+Mm data/fastq/ALL
+docker compose exec rnaseq make GENOME=Dd+Mm data/fastq/test/all
 
 # Get a Bash in the container
 docker compose exec rnaseq bash
@@ -77,7 +76,7 @@ wget -P ./data/fastq --content-disposition --trust-server-names -i 'https://data
 
 # Running the pipeline on a HPC cluster
 ```
-singularity exec 'docker://unigebsp/ngs' make GENOME=Dd+Mm data/fastq/ALL
+singularity exec 'docker://unigebsp/ngs' make GENOME=Dd+Mm data/fastq/test/all
 ```
 
 
