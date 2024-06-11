@@ -8,4 +8,6 @@
 %.bam.bai:%.bam; samtools index "$<" 
 %.bam.flagstat:%.bam; samtools flagstat "$<" > $@
 %.bam.idxstat:%.bam; samtools idxstat "$<" > $@
+%.unmap.fastq.gz:%.bam; samtools fastq -f4 "$<" | pigz > $@
+
 
