@@ -55,14 +55,17 @@ if (!is.null(opt$flyeinfo)) {
 	names(dna) <- str_glue("{names(dna)} [topology={info$topology}] [flye_coverage={info$coverage}] [flye_repetitive={info$is_repetitive}]")
 }
 
-# Apply sub regex rule
+# Apply regex sub-rule
 names(dna) <- sub(opt$"sub-pattern",opt$"sub-replacement",names(dna))
 
 # Add prefix
 names(dna) <- str_glue("{opt$prefix}names(dna)}")
 
+# Add organism field
 if (!is.null(opt$organism)) {
-	names(dna) <- str_glue("{names(dna)} [organism={opt$organism}]")
+	pat <- "\\[ *organism *= *([^\\]]+)\\] *"
+	names(pat) <- sub(pat,"",names(pat)) # delete existing field
+	names(dna) <- str_glue("{names(dna)} [organism={opt$organism}]") # add new field
 }
 
 
