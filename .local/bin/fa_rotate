@@ -79,14 +79,13 @@ local({
 		print()
 })
 
-
 # Rotate the sequences, and change strand
 i <- match(names(fa),seqnames(h),nomatch = 0)
 fa[i!=0] <- xscat(
 	subseq(fa[i!=0],start=start(h)[i]),
 	subseq(fa[i!=0],end=end(h)[i])
 )
-fa[i!=0][strand(h)[i]=="-"] <- reverseComplement(fa[i!=0][strand(h)=="-"])
+fa[i!=0][strand(h)[i]=="-"] <- reverseComplement(fa[i!=0][strand(h)[i]=="-"])
 
 # Update header line
 names(fa)[i!=0] <- str_glue("{names(fa)[i!=0]} [rotation={strand(h)[i]}{start(h)[i]}]")
