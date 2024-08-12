@@ -1,16 +1,32 @@
 
 NJOB ?= 3
+NCPU ?= 6
+CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
+# TruSeq adapter sequence read1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+# TruSeq adapter sequence read2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+# Nextera adapter sequence: CTGTCTCTTATACACATCT
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Shortcuts
+# FASTQC
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%/FASTQC
 %/FASTQC:%/
 	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/_fastqc.html/' | xargs $(MAKE) -j$(NJOB)
 
-#-#-#-#-#-#-#-#-#
-# FASTQC rules
-#-#-#-#-#-#-#-#-#
-%_fastqc.html:%.fastq.gz; fastqc $< && rm -f "$*_fastqc.zip"
+%_fastqc.html:%.fastq.gz
+	fastqc --threads $(NCPU) '$<' #&& rm -f "$*_fastqc.zip"
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# CUTADAPT
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+%_cutadapt.fastq.gz %_cutadapt.json %_cutadapt.txt:%.fastq.gz
+	cutadapt --cores $(NCPU) $(CUTADAPT_FLAGS) \
+	  -o '$*_cutadapt.fastq.gz' \
+	  --json='$*_cutadapt.json' '$<' \
+	  --too-short-output '$*_cutadapt_short.fastq.gz' \
+	  --too-long-output '$*_cutadapt_long.fastq.gz' \
+	  > '$*_cutadapt.txt'
+
 
