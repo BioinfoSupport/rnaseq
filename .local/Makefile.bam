@@ -1,9 +1,9 @@
 
+NCPU ?= 6
 
-
-#-#-#-#-#-#-#-#-#
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # SAMTOOLS rules
-#-#-#-#-#-#-#-#-#
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 %.fasta.fai:%.fasta; samtools faidx "$<"
 %.bam.bai:%.bam; samtools index "$<" 
 %.bam.flagstat:%.bam; samtools flagstat "$<" > $@
@@ -13,18 +13,11 @@
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# BAM Stats
+# BAM coverage
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+%.cov.bed:%.bam
+	bam2cov --thread $(NCPU) --out-prefix="$*.cov" "$<"
 
-# overall coverage (bed)
-# read_start coverage (bed)
-# exonic/intronic/chromosomic base-pair stats
-
-
+%.start.bed:%.bam
 
 
-#%.$(GENOME).bwamem.fc: %.$(GENOME).bwamem.bam
-#	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
-
-#%/$(GENOME).bwamem.quantif/: %/*.$(GENOME).bwamem.bam
-#	ht2fc_merge --out-dir '$@' $^

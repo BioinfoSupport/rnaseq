@@ -1,0 +1,42 @@
+#!/usr/bin/env Rscript
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Argument parsing
+#-#-#-#-#-#-#-#-#-#-#-#-#
+library(optparse)
+
+option_list <- list( 
+	make_option("--out-prefix",help="Prefix for the generated output files <prefix>.bed.bgz <prefix>.bed.bgz.tbi",type="character",default = "output"),
+	make_option("--thread",help="Number of thread",type="integer",default = 4)
+)
+opt <- parse_args(OptionParser(
+	option_list = option_list,
+	usage = "usage: %prog --out-prefix <prefix> <bam-file>",
+	description = "Generate out.bed.bgz and out.bed.bgz.tbi"
+	),positional_arguments = 1)
+if (is.null(opt$options$out)) stop("--out arguments is required")
+#opt <- list(args="data/fastq/test/sample1-1_100k.Mm.ht2.bam",options=list(out="cov.bed"))
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Methods definitions
+#-#-#-#-#-#-#-#-#-#-#-#-#
+suppressPackageStartupMessages({
+	BiocParallel::register(BiocParallel::MulticoreParam(workers=opt$options$thread))
+	library(GenomicAlignments)
+})
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Main
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+bam <- BamFile(opt$args,yieldSize = 1000000)
+bed <- c(
+	coverage(bam,param = ScanBamParam(flag=scanBamFlag(isMinusStrand = FALSE))) |>
+		GRanges(strand="+"),
+	coverage(bam,param = ScanBamParam(flag=scanBamFlag(isMinusStrand = TRUE))) |>
+		GRanges(strand="-")
+)
+rtracklayer::export.bed(bed,paste0(opt$options$"out-prefix",".bed"),index=TRUE)
+
+
