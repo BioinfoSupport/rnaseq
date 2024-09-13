@@ -1,0 +1,30 @@
+
+
+
+#-#-#-#-#-#-#-#-#
+# SAMTOOLS rules
+#-#-#-#-#-#-#-#-#
+%.fasta.fai:%.fasta; samtools faidx "$<"
+%.bam.bai:%.bam; samtools index "$<" 
+%.bam.flagstat:%.bam; samtools flagstat "$<" > $@
+%.bam.idxstat:%.bam; samtools idxstat "$<" > $@
+%.unmap.fastq.gz:%.bam; samtools fastq -f4 "$<" | pigz > $@
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# BAM Stats
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+# overall coverage (bed)
+# read_start coverage (bed)
+# exonic/intronic/chromosomic base-pair stats
+
+
+
+
+#%.$(GENOME).bwamem.fc: %.$(GENOME).bwamem.bam
+#	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
+
+#%/$(GENOME).bwamem.quantif/: %/*.$(GENOME).bwamem.bam
+#	ht2fc_merge --out-dir '$@' $^
