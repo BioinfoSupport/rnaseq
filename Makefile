@@ -5,7 +5,7 @@
 NJOB = 3
 NCPU = 6
 GENOMEDIR = ./data/ref
-GENOME = Dd+Mm
+GENOME = Mm
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -52,7 +52,7 @@ test:
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 include $(LOCALDIR)/Makefile.ht2
-include $(LOCALDIR)/Makefile.samtools
+include $(LOCALDIR)/Makefile.bam
 include $(LOCALDIR)/Makefile.fastq
 include $(LOCALDIR)/Makefile.ref
 
