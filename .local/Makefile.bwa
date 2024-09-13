@@ -1,0 +1,34 @@
+
+NJOB ?= 3
+NCPU ?= 6
+GENOMEDIR ?= ./data/ref
+GENOME ?= Mm
+BWAMEM_FLAGS ?= 
+
+
+.PHONY: %.BWAMEM
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# PAIRED-END RULES 
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+%.BWAMEM:%_R1.fastq.gz %_R2.fastq.gz
+	$(MAKE) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.bai $*.$(GENOME).bwamem.bam.flagstat
+
+%.$(GENOME).bwamem.bam: %_R1.fastq.gz %_R2.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
+	bwa mem $(BWAMEM_FLAGS) -t $(NCPU) $(GENOMEDIR)/$(GENOME)/bwa_index/index $*_R1.fastq.gz $*_R2.fastq.gz | samtools sort --threads $(NCPU) -o '$@' -
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# SINGLE-END RULES 
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+%.BWAMEM:%.fastq.gz
+	$(MAKE) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.bai $*.$(GENOME).bwamem.bam.flagstat
+
+%.$(GENOME).bwamem.bam:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
+	bwa mem $(BWAMEM_FLAGS) -t $(NCPU) $(GENOMEDIR)/$(GENOME)/bwa_index/index "$<" | samtools sort --threads $(NCPU) -o '$@' -
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Imports
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+include $(LOCALDIR)/Makefile.bam
+
+
