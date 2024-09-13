@@ -4,8 +4,8 @@ NJOB ?= 3
 NCPU ?= 6
 
 
-.PHONY:%.bam.all
-%.bam.all:%.bam
+.PHONY:%.bam.ALL
+%.bam.ALL:%.bam
 	$(MAKE) -j$(NJOB) "$<.bai" "$<.flagstat" "$<.cov.bed.bgz" "$<.start.bed.bgz"
 
 
@@ -23,8 +23,8 @@ NCPU ?= 6
 # BAM coverage
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 %.bam.cov.bed.bgz %.bam.cov.bed.bgz.tbi:%.bam
-	bam2cov --thread=$(NCPU) --out-prefix="$*.bam.cov" "$<"
+	#bam2cov --thread=$(NCPU) --out-prefix="$*.bam.cov" "$<"
 %.bam.start.bed.bgz %.bam.start.bed.bgz.tbi:%.bam
-	bam2cov --thread=$(NCPU) --resize=1 --out-prefix="$*.bam.start" "$<"
+	#bam2cov --thread=$(NCPU) --resize=1 --out-prefix="$*.bam.start" "$<"
 
 

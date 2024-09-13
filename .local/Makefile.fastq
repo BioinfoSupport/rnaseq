@@ -7,15 +7,19 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 # Nextera adapter sequence: CTGTCTCTTATACACATCT
 
 
+.PHONY:%.fastq.gz.ALL
+%.fastq.gz.ALL:%.fastq.gz
+	$(MAKE) -j$(NJOB) "$*_fastqc.html" "$<.fqchk"  
+
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # FASTQC
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%/FASTQC
-%/FASTQC:%/
-	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/_fastqc.html/' | xargs $(MAKE) -j$(NJOB)
-
 %_fastqc.html:%.fastq.gz
-	fastqc --threads $(NCPU) '$<' #&& rm -f "$*_fastqc.zip"
+	fastqc --threads $(NCPU) '$<' && rm -f "$*_fastqc.zip"
+
+%.fastq.gz.fqchk:%.fastq.gz
+	seqtk fqchk -q0 "$<" > "$@"
+
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
