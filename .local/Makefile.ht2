@@ -3,27 +3,31 @@
 NJOB ?= 3
 NCPU ?= 6
 GENOMEDIR ?= ./data/ref
-GENOME ?= Dd+Mm
+GENOME ?= Mm
 #HISAT2_FLAGS ?= --rna-strandness R
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Shortcuts
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%.HT2 %/HT2
-%/HT2:%/ $(GENOMEDIR)/$(GENOME)/genome.fasta
-	find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB)
-	$(MAKE) '$*/$(GENOME).ht2.quantif/'
+%/HT2:%/; find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB)
+%/HT2_QUANTIF:%/HT2; $(MAKE) '$*/$(GENOME).ht2.quantif/'
 
-%.HT2:%.fastq.gz
-	$(MAKE) "$*.$(GENOME).ht2.bam" "$*.$(GENOME).ht2.bam.bai" "$*.$(GENOME).ht2.fc" "$*.$(GENOME).ht2.tpm" "$*.$(GENOME).ht2.rf.tpm" "$*.$(GENOME).ht2.fr.tpm"
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# HISAT2 rules
+# HISAT2 PAIRED-END RULES 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
-# Single-End mapping
+# Not implemented yet !
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# HISAT2 SINGLE-END RULES
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%.HT2
+%.HT2:%.fastq.gz $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.bai
+
 .PRECIOUS:%.$(GENOME).ht2.bam
 %.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
 	hisat2 $(HISAT2_FLAGS) \
@@ -35,35 +39,7 @@ GENOME ?= Dd+Mm
 	        -U "$<" \
 	| samtools sort --threads $(NCPU) -o '$*.$(GENOME).ht2.bam' -
 
-
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Quantification rule
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PRECIOUS:%.$(GENOME).ht2.fc
-%.$(GENOME).ht2.fc:%.$(GENOME).ht2.bam
-	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
-
-%/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
-	ht2fc_merge --out-dir '$@' $^
-
-# Stringtie commands to compute TPM
-.PRECIOUS:%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm
-%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm:SHELL=bash
-
-%.$(GENOME).ht2.tpm.gtf:$(GENOMEDIR)/$(GENOME)/genome.gtf.gz
-	zcat "$<" | awk '!/transcript_id ""/' > $@
-%.$(GENOME).ht2.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie -p$(NCPU) -A "$@" -eG "$(@:%.tpm=%.tpm.gtf)" "$<" > /dev/null
-%.$(GENOME).ht2.rf.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie --rf -p$(NCPU) -A "$@" -eG "$(@:%.rf.tpm=%.tpm.gtf)" "$<" > /dev/null
-%.$(GENOME).ht2.fr.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
-	stringtie --fr -p$(NCPU) -A "$@" -eG "$(@:%.fr.tpm=%.tpm.gtf)" "$<" > /dev/null
-
-
-
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Imports
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-include $(LOCALDIR)/Makefile.samtools
-
-
+include $(LOCALDIR)/Makefile.bam
