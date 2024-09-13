@@ -1,18 +1,31 @@
 
 
 GENOMEDIR ?= ./data/ref
-REF_DOWNLOAD_URL ?= https://github.com/BioinfoSupport/genomes/releases/download/v2.0
+REF_DOWNLOAD_URL ?= https://genomes.bioinfo.s3.unige.ch
+CURL_FLAGS ?= -H "Authorization: AWS all_users:"
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Reference genome download
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-$(GENOMEDIR)/Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/Dd/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/GRCh38-r45/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/GRCm39-M34/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/GRCh38+lm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/GRCh38+lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/lm/genome.fasta:;curl -kL "$(REF_DOWNLOAD_URL)/lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
+# Prokaryote
+$(GENOMEDIR)/Mm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/lm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+
+# Eukaryote
+$(GENOMEDIR)/Dd/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/Dd.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/gencode-GRCh38-r45/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/gencode-GRCh38-r45.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/gencode-GRCm39-M34/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/gencode-GRCm39-M34.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/ensembl-GRCh38-110/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/ensembl-GRCh38-110.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/ensembl-GRCm39-110/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/ensembl-GRCm39-110.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+
+# Mixed
+$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/GRCh38+lm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/GRCh38+lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+
+# Unknown genome rule
 $(GENOMEDIR)/%/genome.fasta:;@echo "ERROR: No rule to make genome '$*' in directory '$(GENOMEDIR)'" && 1
+
+
+
 
