@@ -9,7 +9,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 
 .PHONY:%.fastq.gz.ALL
 %.fastq.gz.ALL:%.fastq.gz
-	$(MAKE) -j$(NJOB) "$*_fastqc.html" "$<.fqchk"  
+	$(MAKE) -j$(NJOB) "$*_fastqc.html" "$<.fqchk"
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # FASTQC
@@ -40,7 +40,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 
 # Add READ2 sequence (=UMI sequence) to FASTQ header line (for UMI-tools)
 %_umi.fastq.gz:%_R1.fastq.gz %_R2.fastq.gz
-	seqtk mergepe $^ | awk -f umi2hdr.awk | pigz > $@
+	seqtk mergepe $^ | awk -f umi2hdr | pigz > $@
 
 
 
