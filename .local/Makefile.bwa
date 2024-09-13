@@ -12,7 +12,8 @@ BWAMEM_FLAGS ?=
 # BWA-MEM PAIRED-END RULES 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY: %.BWAMEM
-%.BWAMEM:%_R1.fastq.gz %_R2.fastq.gz $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.bai $*.$(GENOME).bwamem.bam.flagstat
+%.BWAMEM:%_R1.fastq.gz %_R2.fastq.gz
+	$(MAKE) -j$(NJOB) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
 
 .PRECIOUS:%.$(GENOME).bwamem.bam
 %.$(GENOME).bwamem.bam:%_R1.fastq.gz %_R2.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
@@ -26,7 +27,8 @@ BWAMEM_FLAGS ?=
 # BWA-MEM SINGLE-END RULES
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY: %.BWAMEM
-%.BWAMEM:%.fastq.gz $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.bai $*.$(GENOME).bwamem.bam.flagstat
+%.BWAMEM:%.fastq.gz
+	$(MAKE) -j$(NJOB) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
 
 .PRECIOUS:%.$(GENOME).bwamem.bam
 %.$(GENOME).bwamem.bam:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
