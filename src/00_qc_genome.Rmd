@@ -1,32 +1,42 @@
 ---
 title: "Genome QC"
 output: html_document
-date: "2023-08-03"
+date: "2024-04-12"
 params:
   genome_dir: "data/ref/Dd+Mm"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE, message = FALSE)
 options(dplyr.print_max = 1e3)
 ```
 
-
-```{r,message=FALSE}
+```{r echo=FALSE, message=FALSE}
 library(tidyverse)
 library(Rsamtools)
+```
 
+
+```{r message=FALSE}
 contigs_stats <- function(fa) {
 	alphabetFrequency(getSeq(fa)) |> 
-		as.data.frame() |>
-		select(where(~any(.>0))) |>
-		mutate(contig = seqlevels(fa)) |>
-		full_join(enframe(seqlengths(fa),"contig","size"),by="contig")
+			as.data.frame() |>
+			select(where(~any(.>0))) |>
+			mutate(contig = seqlevels(fa)) |>
+			full_join(enframe(seqlengths(fa),"contig","size"),by="contig")
 }
 
 genes_stats <- function(gtf) {
 	testthat::expect_identical(sum(is.na(gtf$gene_id)),0L)
-	
+
+	overall <- gtf %>%
+		splitAsList(.,.$gene_id) |>
+		reduce() |>
+		width() |>
+		sum() |>
+		enframe("gene_id","size")
+
+		
 	genomic <- gtf[gtf$type %in% "gene"] %>%
 		splitAsList(.,.$gene_id) |>
 		reduce() |>
@@ -48,7 +58,6 @@ genes_stats <- function(gtf) {
 		sum() |>
 		enframe("gene_id","cds_bp")
 
-	
 	utr5 <- local({
 		gene <- splitAsList(gtf,gtf$gene_id)
 		cds_rg <- gene[relist(unlist(gene)$type,gene) %in% "CDS"] |> range()
@@ -61,13 +70,13 @@ genes_stats <- function(gtf) {
 		mutate(genome = genome(gtf)[seqnames]) |>
 		select(genome,seqnames,gene_id) |>
 		distinct() |>
+		full_join(overall,by="gene_id",relationship="one-to-one") |>
 		full_join(genomic,by="gene_id",relationship="one-to-one") |>
 		full_join(exonic,by="gene_id",relationship="one-to-one") |>
 		full_join(cds,by="gene_id",relationship="one-to-one") |>
 		full_join(utr5,by="gene_id",relationship="one-to-one")
 }
 ```
-
 
 # Load data
 
@@ -83,35 +92,142 @@ if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
 }
 ```
 
+# Sequence statistics {.tabset}
 
-
-# Sequence statistics
 ```{r}
-contigs_stats(fa) |>
+ctg_stat <- contigs_stats(fa) |>
 	mutate(genome=genome(gtf)) |>
-	relocate(genome,contig) |>
+	relocate(genome,contig)
+```
+
+## Genomes {.tabset}
+
+### Nucleotide content
+```{r}
+ctg_stat |>
 	group_by(genome) |> 
-	summarise(across(!contig,sum),num_contig=n())
+	select(!size) |>
+	pivot_longer(!c(genome,contig),names_to = "nucleotide",values_to = "count") |>
+	group_by(genome,nucleotide) |>
+	summarise(count=sum(count)) |>
+	ggplot(aes(x=count,y=genome,fill=nucleotide)) + 
+		geom_col(position = "fill",color="black") + 
+		geom_text(aes(label=nucleotide),position = position_fill(vjust=0.5)) +
+		theme_bw() + xlab("") + 
+		scale_x_continuous(labels = scales::percent) + theme(legend.position = "none")
 ```
 
-```{r}
-contigs_stats(fa) |>
-	mutate(genome=genome(gtf)) |>
+### Dinucleotides
+```{r fig.height=4, fig.width=7}
+dinucleotideFrequency(getSeq(fa)) |>
+	as_tibble() |>
+	mutate(contig = seqlevels(fa),genome=genome(gtf)) |>
 	relocate(genome,contig) |>
-	arrange(genome,desc(size))
+	pivot_longer(!c(genome,contig),names_to = "dinucleotide",values_to = "count") |>
+	group_by(genome,dinucleotide) |>
+	summarize(count=sum(count)) |>
+	group_by(genome) |>
+	mutate(pct=100*count/sum(count)) |>
+	ggplot(aes(y=dinucleotide,x=count)) + 
+		facet_grid(.~genome,scales="free_x") +
+		geom_col() + 
+		geom_text(aes(x=count/2,label=sprintf("%.1f%%",pct)),size=3) + 
+		theme_bw() + theme(legend.position="none")
+```
+
+### Summary
+```{r}
+ctg_stat  |>
+	group_by(genome) |> 
+	summarise(across(!contig,sum),num_contig=n()) %>%
+	mutate(GC_content = 100*rowSums(pick(any_of(c("C","G"))))/size) |>
+	mutate(GC_content = sprintf("%.1f%%",GC_content)) |>
+	relocate(genome,size,num_contig,GC_content) |>
+	knitr::kable(caption="Number of nucleotide per genome")
 ```
 
 
 
-# Features statistics
+
+
+## Contigs {.tabset}
+
+### Nucleotide content
+```{r fig.height=8, fig.width=6}
+ctg_stat |>
+	select(!size) |>
+	pivot_longer(!c(genome,contig),names_to = "nucleotide",values_to = "count") |>
+	ggplot(aes(x=count,y=contig,fill=nucleotide)) + 
+		facet_grid(genome~.,scales = "free_y",space = "free_y") +
+		geom_col(position = "fill",color="black") + 
+		geom_text(aes(label=nucleotide),position = position_fill(vjust=0.5)) +
+		theme_bw() + xlab("") + 
+		scale_x_continuous(labels = scales::percent) + theme(legend.position = "none")
+```
+
+
+
+
+### Dinucleotides 
+
+```{r fig.height=4, fig.width=8}
+dinucleotideFrequency(getSeq(fa)) |>
+	as_tibble() |>
+	mutate(seq_id = seqlevels(fa),genome=genome(gtf)) |>
+	relocate(genome,seq_id) |>
+	pivot_longer(!c(genome,seq_id),names_to = "dinucleotide",values_to = "count") |>
+	ggplot(aes(y=dinucleotide,x=count)) + 
+	facet_grid(.~genome + seq_id,scales="free_x") +
+	geom_col() + 
+	geom_text(aes(x=count/2,label=count),size=3) + 
+	theme_bw() + theme(legend.position="none")
+```
+
+
+### Nucleotide Summary
 ```{r}
+ctg_stat |>
+	arrange(genome,desc(size)) |>
+	mutate(GC_content = 100*rowSums(pick(any_of(c("C","G"))))/size) |>
+	mutate(GC_content = sprintf("%.1f%%",GC_content)) |>
+	relocate(genome,contig,size,GC_content) |>
+	knitr::kable(caption="Contigs Nucleotide Content")
+```
+
+
+
+### Dinucleotides Summary
+```{r}
+dinucleotideFrequency(getSeq(fa)) |>
+	as_tibble() |>
+	mutate(seq_id = seqlevels(fa),genome=genome(gtf)) |>
+	relocate(genome,seq_id) |>
+	knitr::kable()
+```
+
+# Features statistics {.tabset}
+
+## Per genome
+
+```{r}
+# features_type_cov <- split(gtf,gtf$type) |>
+# 	map(~sum(width(reduce(split(.,seqnames(.)),ignore.strand=TRUE)))) |>
+# 	simplify2array() |>
+# 	as_tibble(rownames="contig") |>
+# 	pivot_longer(!contig,names_to = "type",values_to = "bp_cov")
+# 
+# contigs_stats <- as_tibble(seqinfo(gtf),rownames="contig") |>
+# 	rename(seqlengths = "contig_len") |>
+# 	select(!isCircular) 
 as.data.frame(gtf) |>
 	mutate(genome=genome(gtf)[seqnames]) |>
 	group_by(genome,type) |>
-	summarize(n=n()) |>
-	pivot_wider(names_from = "genome",values_from = "n")
+	summarize(n=n_distinct(gene_id),med_size=median(width),avg_size=mean(width)) |>
+	pivot_wider(names_from = "genome",values_from = c("n","med_size","avg_size")) |>
+	knitr::kable(caption = "Number of feature per genome")
 ```
 
+## Per contig
 
 ```{r}
 as.data.frame(gtf) |>
@@ -119,24 +235,27 @@ as.data.frame(gtf) |>
 	group_by(genome,seqnames,type) |>
 	summarize(n=n()) |>
 	pivot_wider(names_from = "type",values_from = "n") |>
-	arrange(genome,desc(gene))
+	arrange(genome,desc(gene)) |>
+	knitr::kable(caption = "Number of feature per contig")
 ```
 
+## Genes coverage
 
-# Overall genes stats
 ```{r}
 genes_stats(gtf) |>
 	group_by(genome) |>
-	summarize(num_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE)))
+	summarize(num_gene=n_distinct(gene_id),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE))) |>
+	knitr::kable()
 ```
 
+## Coding genes coverage
 
-# Coding genes stats
 ```{r}
 genes_stats(gtf) |>
 	group_by(genome) |>
 	filter(cds_bp>0) |>
-	summarize(num_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE)))
+	summarize(num_coding_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE))) |>
+	knitr::kable()
 ```
 
 
@@ -145,6 +264,40 @@ genes_stats(gtf) |>
 
 
 
+
+## Dinucleotides {.tabset}
+```{r}
+genes <- subset(gtf,type %in% "gene")
+genes$dna <- getSeq(fa,genes)
+genes$dinuc <- dinucleotideFrequency(genes$dna)
+```
+
+### Distribution
+```{r fig.height=4, fig.width=15}
+as_tibble(genes$dinuc) |>
+	mutate(genome = unname(genome(genes))[as.integer(seqnames(genes))]) |>
+	pivot_longer(!genome,names_to = "dinucleotide") |>
+	ggplot() +
+		facet_grid(genome~dinucleotide,scales="free_y") +
+		geom_histogram(aes(x=pmin(value,100)))
+```
+
+### Summary Stats
+```{r}
+as_tibble(genes$dinuc) |>
+	mutate(genome = unname(genome(genes))[as.integer(seqnames(genes))]) |>
+	pivot_longer(!genome,names_to = "dinucleotide") |>
+	group_by(genome,dinucleotide) |>
+	summarise(
+		num_gene = n(),
+		num_gene_with_ge10_dinuc = sum(value>=10),
+		avg_dinuc_count = mean(value),
+		median_dinuc_count = median(value),
+		min_dinuc_count = min(value),
+		max_dinuc_count = max(value)
+	) |>
+	knitr::kable()
+```
 
 
 
