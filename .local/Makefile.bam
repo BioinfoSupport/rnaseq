@@ -15,9 +15,10 @@ NCPU ?= 6
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # BAM coverage
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-%.cov.bed:%.bam
+%.cov.bed.bgz %.cov.bed.bgz.tbi:%.bam
 	bam2cov --thread $(NCPU) --out-prefix="$*.cov" "$<"
 
-%.start.bed:%.bam
+%.start.bed.bgz %.start.bed.bgz.tbi:%.bam
+#	bam2cov --thread $(NCPU) --out-prefix="$*.cov" "$<"
 
 

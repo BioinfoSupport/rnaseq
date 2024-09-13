@@ -13,7 +13,8 @@ option_list <- list(
 opt <- parse_args(OptionParser(
 	option_list = option_list,
 	usage = "usage: %prog --out-prefix <prefix> <bam-file>",
-	description = "Generate out.bed.bgz and out.bed.bgz.tbi"
+	description = "Extract stranded read coverage for each position of the given BAM file.
+	Generate a compressed and indexed BED file with read-coverage of all genomic positions."
 	),positional_arguments = 1)
 if (is.null(opt$options$out)) stop("--out arguments is required")
 #opt <- list(args="data/fastq/test/sample1-1_100k.Mm.ht2.bam",options=list(out="cov.bed"))
