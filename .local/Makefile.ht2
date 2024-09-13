@@ -7,26 +7,33 @@ GENOME ?= Mm
 #HISAT2_FLAGS ?= --rna-strandness R
 
 
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Shortcuts
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-%/HT2:%/; find "$<" -maxdepth 1 -type f -name '*.fastq.gz' | sed 's/.fastq.gz$$/.HT2/' | xargs $(MAKE) -j$(NJOB)
-%/HT2_QUANTIF:%/HT2; $(MAKE) '$*/$(GENOME).ht2.quantif/'
-
-
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # HISAT2 PAIRED-END RULES 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%.HT2
+%.HT2:%_R1.fastq.gz %_R2.fastq.gz
+	$(MAKE) -j$(NJOB) $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.ALL
 
-# Not implemented yet !
+.PRECIOUS:%.$(GENOME).ht2.bam
+%.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%_R1.fastq.gz %_R2.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
+	hisat2 $(HISAT2_FLAGS) \
+	        -p $(NCPU) --time \
+	        --new-summary --summary-file "$*.$(GENOME).ht2.stat" \
+	        --novel-splicesite-outfile "$*.$(GENOME).ht2.ss" \
+	        --omit-sec-seq \
+	        -x '$(GENOMEDIR)/$(GENOME)/ht2_index/index' \
+	        -1 "$(word $^,1)" \
+	        -2 "$(word $^,2)" \
+	| samtools sort --threads $(NCPU) -o '$*.$(GENOME).ht2.bam' -
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # HISAT2 SINGLE-END RULES
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%.HT2
-%.HT2:%.fastq.gz $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.bai
+%.HT2:%.fastq.gz
+	$(MAKE) -j$(NJOB) $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.ALL
 
 .PRECIOUS:%.$(GENOME).ht2.bam
 %.$(GENOME).ht2.bam %.$(GENOME).ht2.ss %.$(GENOME).ht2.stat:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
