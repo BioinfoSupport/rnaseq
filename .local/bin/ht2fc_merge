@@ -26,6 +26,7 @@ suppressPackageStartupMessages({
 	library(SummarizedExperiment)
 	library(GenomicAlignments)
 	library(tidyverse)
+  library(AnnotationDbi)
 })
 
 
@@ -52,7 +53,7 @@ ht2_read_feature_counts <- function(bam_files,default_counts="genomicU") {
 	bam_files <- BamFileList(bam_files)
 	
 	# Load counts and feature sizes
-	x <- sub(".bam$",".fc",path(bam_files)) |>
+	x <- sub(".bam$",".bam.fc",path(bam_files)) |>
 		BiocParallel::bplapply(read.table,header=TRUE,sep="\t") |>
 		bind_rows(.id="lib") |>
 		mutate(lib=factor(lib,names(bam_files)))

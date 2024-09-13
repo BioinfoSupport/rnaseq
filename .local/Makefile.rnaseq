@@ -20,7 +20,7 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 %/RNASEQ:INPUT_FQ = $(wildcard $*/*.fastq.gz)
 %/RNASEQ:%/
 	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.RNASEQ)
-	
+	$(MAKE) -j$(NJOB) $*/HT2_QUANTIFY
 
 .PHONY:%.RNASEQ
 %.RNASEQ:%.fastq.gz
@@ -30,10 +30,11 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
+include $(LOCALDIR)/Makefile.ref
+include $(LOCALDIR)/Makefile.fastq
 include $(LOCALDIR)/Makefile.ht2
 include $(LOCALDIR)/Makefile.bam
-include $(LOCALDIR)/Makefile.fastq
-include $(LOCALDIR)/Makefile.ref
+include $(LOCALDIR)/Makefile.quantif
 
 
 
