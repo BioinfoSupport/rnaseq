@@ -1,0 +1,39 @@
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Parameters
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+NJOB = 3
+NCPU = 6
+GENOMEDIR = ./data/ref
+GENOME = Mm
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Set environment variables
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+MKDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+export LOCALDIR := $(MKDIR)/
+export PATH := $(LOCALDIR)/bin/:$(PATH)
+
+
+.PHONY:%/RNASEQ
+%/RNASEQ:INPUT_FQ = $(wildcard $*/*.fastq.gz)
+%/RNASEQ:%/
+	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.RNASEQ)
+	
+
+.PHONY:%.RNASEQ
+%.RNASEQ:%.fastq.gz
+	$(MAKE) -j$(NJOB) $<.ALL $*.HT2
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# import external rules
+#-#-#-#-#-#-#-#-#-#-#-#-#-#
+include $(LOCALDIR)/Makefile.ht2
+include $(LOCALDIR)/Makefile.bam
+include $(LOCALDIR)/Makefile.fastq
+include $(LOCALDIR)/Makefile.ref
+
+
+
