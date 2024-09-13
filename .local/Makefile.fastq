@@ -30,3 +30,13 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 	  > '$*_cutadapt.txt'
 
 
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# UMI tools
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+# Add READ2 sequence (=UMI sequence) to FASTQ header line (for UMI-tools)
+%_umi.fastq.gz:%_R1.fastq.gz %_R2.fastq.gz
+	seqtk mergepe $^ | awk -f umi2hdr.awk | pigz > $@
+
+
+
