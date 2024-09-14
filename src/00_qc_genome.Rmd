@@ -20,61 +20,11 @@ library(Rsamtools)
 ```{r message=FALSE}
 contigs_stats <- function(fa) {
 	alphabetFrequency(getSeq(fa)) |> 
-			as.data.frame() |>
+			as_tibble() |>
 			select(where(~any(.>0))) |>
 			mutate(contig = seqlevels(fa)) |>
-			full_join(enframe(seqlengths(fa),"contig","size"),by="contig")
-}
-
-genes_stats <- function(gtf) {
-	testthat::expect_identical(sum(is.na(gtf$gene_id)),0L)
-
-	overall <- gtf %>%
-		splitAsList(.,.$gene_id) |>
-		reduce() |>
-		width() |>
-		sum() |>
-		enframe("gene_id","size")
-
-		
-	genomic <- gtf[gtf$type %in% "gene"] %>%
-		splitAsList(.,.$gene_id) |>
-		reduce() |>
-		width() |>
-		sum() |>
-		enframe("gene_id","genomic_bp")
-
-	exonic <- gtf[gtf$type %in% "exon"] %>%
-		splitAsList(.,.$gene_id) |>
-		reduce() |>
-		width() |>
-		sum() |>
-		enframe("gene_id","exonic_bp")
-	
-	cds <- gtf[gtf$type %in% "CDS"] %>%
-		splitAsList(.,.$gene_id) |>
-		reduce() |>
-		width() |>
-		sum() |>
-		enframe("gene_id","cds_bp")
-
-	utr5 <- local({
-		gene <- splitAsList(gtf,gtf$gene_id)
-		cds_rg <- gene[relist(unlist(gene)$type,gene) %in% "CDS"] |> range()
-		psetdiff(unlist(range(gene)),resize(cds_rg,fix = "start",width = 1e7)) |> 
-			width() |> sum() |> 
-			enframe("gene_id","utr5_bp")
-	})
-	
-	as.data.frame(gtf) |>
-		mutate(genome = genome(gtf)[seqnames]) |>
-		select(genome,seqnames,gene_id) |>
-		distinct() |>
-		full_join(overall,by="gene_id",relationship="one-to-one") |>
-		full_join(genomic,by="gene_id",relationship="one-to-one") |>
-		full_join(exonic,by="gene_id",relationship="one-to-one") |>
-		full_join(cds,by="gene_id",relationship="one-to-one") |>
-		full_join(utr5,by="gene_id",relationship="one-to-one")
+			full_join(enframe(seqlengths(fa),"contig","size"),by="contig") |>
+			relocate(contig,size)
 }
 ```
 
@@ -92,17 +42,23 @@ if (file.exists(file.path(params$genome_dir,"seqinfo.tsv"))) {
 }
 ```
 
-# Sequence statistics {.tabset}
+# Sequence Statistics {.tabset}
+## Genome-wide {.tabset}
 
 ```{r}
 ctg_stat <- contigs_stats(fa) |>
 	mutate(genome=genome(gtf)) |>
+	relocate(genome)
+
+dinuc_stat <- dinucleotideFrequency(getSeq(fa)) |>
+	as_tibble() |>
+	mutate(contig = seqlevels(fa),genome=genome(gtf)) |>
 	relocate(genome,contig)
 ```
 
-## Genomes {.tabset}
+### Nucleotide content {.tabset}
 
-### Nucleotide content
+#### Graphical Overview
 ```{r}
 ctg_stat |>
 	group_by(genome) |> 
@@ -117,12 +73,22 @@ ctg_stat |>
 		scale_x_continuous(labels = scales::percent) + theme(legend.position = "none")
 ```
 
-### Dinucleotides
+#### Summary
+```{r}
+ctg_stat  |>
+	group_by(genome) |> 
+	summarise(across(!contig,sum),num_contig=n()) %>%
+	mutate(GC_content = 100*rowSums(pick(any_of(c("C","G"))))/size) |>
+	mutate(GC_content = sprintf("%.1f%%",GC_content)) |>
+	relocate(genome,size,num_contig,GC_content) |>
+	knitr::kable(caption="Number of nucleotide per genome")
+```
+
+### Dinucleotide content {.tabset}
+
+#### Graphical Overview
 ```{r fig.height=4, fig.width=7}
-dinucleotideFrequency(getSeq(fa)) |>
-	as_tibble() |>
-	mutate(contig = seqlevels(fa),genome=genome(gtf)) |>
-	relocate(genome,contig) |>
+dinuc_stat |>
 	pivot_longer(!c(genome,contig),names_to = "dinucleotide",values_to = "count") |>
 	group_by(genome,dinucleotide) |>
 	summarize(count=sum(count)) |>
@@ -135,24 +101,24 @@ dinucleotideFrequency(getSeq(fa)) |>
 		theme_bw() + theme(legend.position="none")
 ```
 
-### Summary
+
+#### Summary
 ```{r}
-ctg_stat  |>
-	group_by(genome) |> 
-	summarise(across(!contig,sum),num_contig=n()) %>%
-	mutate(GC_content = 100*rowSums(pick(any_of(c("C","G"))))/size) |>
-	mutate(GC_content = sprintf("%.1f%%",GC_content)) |>
-	relocate(genome,size,num_contig,GC_content) |>
-	knitr::kable(caption="Number of nucleotide per genome")
+dinuc_stat |>
+	group_by(genome) |>
+	summarize(across(!contig,sum)) |>
+	knitr::kable()
 ```
 
 
 
 
 
-## Contigs {.tabset}
+## Contig-wide {.tabset}
 
-### Nucleotide content
+### Nucleotide content {.tabset}
+
+#### Graphical Overview
 ```{r fig.height=8, fig.width=6}
 ctg_stat |>
 	select(!size) |>
@@ -165,26 +131,7 @@ ctg_stat |>
 		scale_x_continuous(labels = scales::percent) + theme(legend.position = "none")
 ```
 
-
-
-
-### Dinucleotides 
-
-```{r fig.height=4, fig.width=8}
-dinucleotideFrequency(getSeq(fa)) |>
-	as_tibble() |>
-	mutate(seq_id = seqlevels(fa),genome=genome(gtf)) |>
-	relocate(genome,seq_id) |>
-	pivot_longer(!c(genome,seq_id),names_to = "dinucleotide",values_to = "count") |>
-	ggplot(aes(y=dinucleotide,x=count)) + 
-	facet_grid(.~genome + seq_id,scales="free_x") +
-	geom_col() + 
-	geom_text(aes(x=count/2,label=count),size=3) + 
-	theme_bw() + theme(legend.position="none")
-```
-
-
-### Nucleotide Summary
+#### Summary
 ```{r}
 ctg_stat |>
 	arrange(genome,desc(size)) |>
@@ -195,40 +142,57 @@ ctg_stat |>
 ```
 
 
+### Dinucleotide content {.tabset}
 
-### Dinucleotides Summary
+#### Graphical Overview
+```{r fig.height=4, fig.width=8}
+dinuc_stat |>
+	pivot_longer(!c(genome,contig),names_to = "dinucleotide",values_to = "count") |>
+	ggplot(aes(y=dinucleotide,x=count)) + 
+	facet_grid(.~genome + contig,scales="free_x") +
+	geom_col() + 
+	geom_text(aes(x=count/2,label=count),size=3) + 
+	theme_bw() + theme(legend.position="none")
+```
+
+
+#### Summary
 ```{r}
-dinucleotideFrequency(getSeq(fa)) |>
-	as_tibble() |>
-	mutate(seq_id = seqlevels(fa),genome=genome(gtf)) |>
-	relocate(genome,seq_id) |>
+dinuc_stat |>
 	knitr::kable()
 ```
 
+
 # Features statistics {.tabset}
 
-## Per genome
-
 ```{r}
-# features_type_cov <- split(gtf,gtf$type) |>
-# 	map(~sum(width(reduce(split(.,seqnames(.)),ignore.strand=TRUE)))) |>
-# 	simplify2array() |>
-# 	as_tibble(rownames="contig") |>
-# 	pivot_longer(!contig,names_to = "type",values_to = "bp_cov")
-# 
-# contigs_stats <- as_tibble(seqinfo(gtf),rownames="contig") |>
-# 	rename(seqlengths = "contig_len") |>
-# 	select(!isCircular) 
-as.data.frame(gtf) |>
-	mutate(genome=genome(gtf)[seqnames]) |>
-	group_by(genome,type) |>
-	summarize(n=n_distinct(gene_id),med_size=median(width),avg_size=mean(width)) |>
-	pivot_wider(names_from = "genome",values_from = c("n","med_size","avg_size")) |>
-	knitr::kable(caption = "Number of feature per genome")
+genes <- subset(gtf,type %in% "gene")
+genes$dna <- getSeq(fa,genes)
+genes$dinuc <- dinucleotideFrequency(genes$dna)
 ```
 
-## Per contig
+## Feature Count {.tabset}
 
+### Global
+
+```{r}
+feature_type_cov <- split(gtf,gtf$type) |>
+	map(~sum(width(reduce(split(.,seqnames(.)),ignore.strand=TRUE)))) |>
+	simplify2array() |>
+	as_tibble(rownames="contig") |>
+	pivot_longer(!contig,names_to = "feature_type",values_to = "bp_cov")
+
+feature_count <- as.data.frame(gtf) |>
+	select(contig=seqnames,feature_type=type,feature_size=width) |>
+	left_join(select(ctg_stat,genome,contig),by="contig") |>
+	group_by(genome,feature_type) |>
+	summarize(n_feature=n(),median_feature_size=median(feature_size),avg_feature_size=mean(feature_size)) 
+
+pivot_wider(feature_count,id_cols = "genome",names_from = "feature_type",values_from = "n_feature") |>
+	knitr::kable(caption="Number of feature in the genome")
+```
+
+### By Contig
 ```{r}
 as.data.frame(gtf) |>
 	mutate(genome=genome(gtf)[seqnames]) |>
@@ -239,38 +203,42 @@ as.data.frame(gtf) |>
 	knitr::kable(caption = "Number of feature per contig")
 ```
 
-## Genes coverage
+## Features Size {.tabset}
 
+### Distribution
 ```{r}
-genes_stats(gtf) |>
-	group_by(genome) |>
-	summarize(num_gene=n_distinct(gene_id),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE))) |>
-	knitr::kable()
+as.data.frame(gtf) |>
+	ggplot(aes(x=width)) +
+	facet_wrap(~type) +
+	geom_histogram() + 
+	scale_x_log10() + theme_bw() + xlab("Feature size") + ylab("Feature count")
 ```
 
-## Coding genes coverage
-
+### Summary
 ```{r}
-genes_stats(gtf) |>
-	group_by(genome) |>
-	filter(cds_bp>0) |>
-	summarize(num_coding_gene=n(),across(!c(seqnames,gene_id),~sum(.,na.rm=TRUE))) |>
-	knitr::kable()
+pivot_wider(feature_count,id_cols = "genome",names_from = "feature_type",values_from = "avg_feature_size") |>
+	knitr::kable(caption="Average feature size")
+
+pivot_wider(feature_count,id_cols = "genome",names_from = "feature_type",values_from = "median_feature_size") |>
+	knitr::kable(caption="Median feature size")
 ```
 
 
 
 
-
-
-
-
-## Dinucleotides {.tabset}
+## Covered Genome Fraction
 ```{r}
-genes <- subset(gtf,type %in% "gene")
-genes$dna <- getSeq(fa,genes)
-genes$dinuc <- dinucleotideFrequency(genes$dna)
+select(ctg_stat,genome,contig,contig_size=size) |>
+	full_join(feature_type_cov,by="contig") |>
+	group_by(genome,feature_type) |>
+	summarize(covered_bp=sum(bp_cov)) |>
+	pivot_wider(id_cols = "genome",names_from = "feature_type",values_from = "covered_bp") |>
+	knitr::kable(caption="Number of base-pair covered by all features of a given type")
 ```
+
+## Genes Dinucleotide Content {.tabset}
+
+Here we report only features of type `gene`.
 
 ### Distribution
 ```{r fig.height=4, fig.width=15}
@@ -279,10 +247,12 @@ as_tibble(genes$dinuc) |>
 	pivot_longer(!genome,names_to = "dinucleotide") |>
 	ggplot() +
 		facet_grid(genome~dinucleotide,scales="free_y") +
-		geom_histogram(aes(x=pmin(value,100)))
+		geom_histogram(aes(x=pmin(value,100))) + 
+		ylab("Gene count") + xlab("Dinucleotide count") + 
+		ggtitle("Number of gene for a given number of dinucleotide")
 ```
 
-### Summary Stats
+### Summary
 ```{r}
 as_tibble(genes$dinuc) |>
 	mutate(genome = unname(genome(genes))[as.integer(seqnames(genes))]) |>
@@ -296,8 +266,14 @@ as_tibble(genes$dinuc) |>
 		min_dinuc_count = min(value),
 		max_dinuc_count = max(value)
 	) |>
-	knitr::kable()
+	knitr::kable(caption="This table look only at features of type `gene`, and report Average/Median/Min/Max number of dinucleotide per gene. `num_gene_with_ge10_dinuc` is the number of gene with more than 10 occurence of the dinucleotide")
 ```
+
+
+
+
+
+
 
 
 
