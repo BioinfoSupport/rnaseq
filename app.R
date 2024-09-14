@@ -75,7 +75,7 @@ server <- function(input, output, session) {
 	# RNASEQ panel pipeline logic
 	#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 	output$rnseq_terminal_stdout <- eventReactive(input$run_rnaseq,{
-		cmd <- sprintf("make GENOME='%s' '%s/all' 2>&1",input$rnaseq_genome,input$rnaseq_fastq_dir)
+		cmd <- sprintf("make GENOME='%s' '%s/RNASEQ' 2>&1",input$rnaseq_genome,input$rnaseq_fastq_dir)
 		print(cmd)
 		withProgress(message="Running the pipeline",{
 			pipe(cmd) |> readLines() |> paste(collapse = "\n")

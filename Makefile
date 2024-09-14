@@ -34,10 +34,10 @@ USAGE:
 
 
 
-TEST:
+TESTS:
 	$(MAKE) GENOME=Mm data/fastq/test/RNASEQ
-	#$(MAKE) GENOME=Dd+Mm data/fastq/test/ALL
-	#$(MAKE) GENOME=Dd data/fastq/test/ALL
+	$(MAKE) GENOME=Dd+Mm data/fastq/test/RNASEQ
+	$(MAKE) GENOME=Dd data/fastq/test/RNASEQ
 	
 
 %/CLEAN:
@@ -47,6 +47,7 @@ TEST:
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 include $(LOCALDIR)/Makefile.rnaseq
+#include $(LOCALDIR)/Makefile.tnseq
 
 
 

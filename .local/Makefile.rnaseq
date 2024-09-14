@@ -2,10 +2,10 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Parameters
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-NJOB = 3
-NCPU = 6
-GENOMEDIR = ./data/ref
-GENOME = Mm
+NJOB ?= 3
+NCPU ?= 6
+GENOMEDIR ?= ./data/ref
+GENOME ?= Mm
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -16,6 +16,9 @@ export LOCALDIR := $(MKDIR)/
 export PATH := $(LOCALDIR)/bin/:$(PATH)
 
 
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Main
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%/RNASEQ
 %/RNASEQ:INPUT_FQ = $(wildcard $*/*.fastq.gz)
 %/RNASEQ:%/

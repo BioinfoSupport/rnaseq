@@ -55,7 +55,7 @@ src/
 docker compose up -d
 
 # Run tests
-docker compose exec rnaseq make test
+docker compose exec rnaseq make TESTS
 
 # Map and quantify all .fastq.gz files located in data/fastq/pilot
 docker compose exec rnaseq make data/fastq/pilot/all
@@ -81,6 +81,11 @@ singularity exec 'docker://unigebsp/ngs' make GENOME=Dd+Mm data/fastq/test/all
 
 
 
+# Conventions
+
+- Use uppercase for .PHONY rules (e.g. %.fastq.gz.ALL, %.bam.ALL, %.BWAMEM, %.HT2)
+
+- 
 
 
 
