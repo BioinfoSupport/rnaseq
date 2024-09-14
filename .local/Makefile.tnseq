@@ -1,0 +1,47 @@
+
+# Parameters
+
+NJOB ?= 3
+NCPU ?= 6
+GENOMEDIR ?= ./data/ref
+GENOME ?= Mm
+HISAT2_FLAGS += --no-spliced-alignment
+CUTADAPT_FLAGS += -e 0.05
+CUTADAPT_FLAGS += --front CGGGGACTTATCAGCCAACCTGT
+CUTADAPT_FLAGS += --minimum-length 25
+CUTADAPT_FLAGS += --maximum-length 85
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Set environment variables
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+MKDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+export LOCALDIR := $(MKDIR)/.local/
+export PATH := $(LOCALDIR)/bin/:$(PATH)
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Main
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%/TNSEQ_SE
+%/TNSEQ_SE:INPUT_FQ = $(wildcard $*/*.fastq.gz)
+%/TNSEQ_SE:%/
+	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.TNSEQ_SE)
+	#$(MAKE) -j$(NJOB) $*/TNSEQ_QUANTIFY
+
+.PHONY:%.TNSEQ_SE
+%.TNSEQ_SE:%.fastq.gz
+	$(MAKE) -j$(NJOB) $<.ALL $*_umi_cutadapt.fastq.gz $*_umi_cutadapt.HT2 
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# import external rules
+#-#-#-#-#-#-#-#-#-#-#-#-#-#
+include $(LOCALDIR)/Makefile.ref
+include $(LOCALDIR)/Makefile.fastq
+include $(LOCALDIR)/Makefile.ht2
+include $(LOCALDIR)/Makefile.bam
+include $(LOCALDIR)/Makefile.quantif
+
+
+
