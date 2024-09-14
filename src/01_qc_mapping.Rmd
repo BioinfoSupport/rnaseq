@@ -1,10 +1,10 @@
 ---
-title: "RNA-seq QC"
+title: "Mapping QC"
 output: html_document
 date: "2023-08-03"
 params:
-  quantif_rds: "data/fastq/pilot/Dd+Mm.ht2.quantif/robj.rds"
-  genome_dir: "data/ref/Dd+Mm"
+  quantif_rds: "data/fastq/test/Mm.ht2.quantif/robj.rds"
+  genome_dir: "data/ref/Mm"
   outdir: "./"
 ---
 
@@ -52,7 +52,8 @@ colData(x) |>
 	as_tibble() |>
 	select(lib,sequenced,uniqmap,multimap,unmap) |>
 	mutate(mapped = uniqmap+multimap) |>
-  mutate(prop_mapped = mapped/sequenced) |>
+  mutate("%mapped" = sprintf("%.1f%%",100*mapped/sequenced)) |>
+	relocate(lib,sequenced,mapped,"%mapped") |>
 	knitr::kable(caption = "overall mapping statistics and alignment multiplicity")
 
 colData(x) |>
@@ -92,8 +93,8 @@ metadata(x)$chrom_stats |>
 	summarize(count = sum(count)) |>
 	group_by(lib) |>
 	mutate(mapped = sum(count)) |>
-	mutate(prop=count/mapped) |>
-	pivot_wider(id_cols = c("lib","mapped"),names_from = "genome",values_from = c("count","prop")) |>
+	mutate("%" = sprintf("%.1f%%",100*count/mapped)) |>
+	pivot_wider(id_cols = c("lib","mapped"),names_from = "genome",values_from = c("count","%")) |>
 	knitr::kable()
 ```
 
