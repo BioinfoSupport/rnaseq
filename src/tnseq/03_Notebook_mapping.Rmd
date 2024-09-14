@@ -1,0 +1,723 @@
+---
+title: "Data mapping with hisat2"
+output: html_document
+date: "2024-05-09"
+params:
+  data_dir: "data/fastq/test"
+  genome_dir: "data/ref/Mm"
+  quantif_rds: "data/fastq/test/Mm.ht2.tn.quantif/robj.rds"
+---
+
+```{r install packages, echo=FALSE}
+if (!requireNamespace("GenomicAlignments", quietly = TRUE)) {
+  install.packages("GenomicAlignments")
+}
+if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
+  install.packages("GenomicRanges")
+}
+```
+
+```{r load library, echo=FALSE, message=FALSE}
+library("GenomicAlignments")
+library("knitr")
+library("ggplot2")
+library("stringr")
+library("ShortRead")
+library("tidyverse")
+library("Rsamtools")
+library("reshape2")
+library("GenomicRanges")
+```
+
+```{r Load data, echo=FALSE}
+fa_file <- FaFile(file.path(params$genome_dir,"genome.fasta"))
+
+path_bam <- list.files(path = params$data_dir, pattern = "*_cutadapt.Mm.ht2.bam$", full.names = TRUE)
+file_bam <- list.files(path = params$data_dir, pattern = "*_cutadapt.Mm.ht2.bam$", full.names = FALSE)
+
+liste_bam <- BamFileList(dir(params$data_dir,"bam$"))
+
+bamfiles <- dir(path = params$data_dir,pattern="*.bam$",full.names=TRUE)
+```
+
+```{r echo=FALSE}
+fa <- getSeq(fa_file)
+names(fa) <- sub(" .*","",names(fa))
+
+gAlns <- lapply(bamfiles,readGAlignments)
+names(gAlns) <- file_bam
+
+gr <- GRangesList(gAlns)
+
+lst <- lapply(gAlns,seqinfo)
+names(lst) <- file_bam
+
+all_tn_insertion <- function(bam){
+  test <- resize(unname(granges(bam)),2)
+}
+lst_all_tn_insertion <- lapply(gAlns,all_tn_insertion)
+
+seq_genome <- fa
+names(seq_genome) <- sub(" .*","",names(seq_genome))
+
+all_ta <- vmatchPattern("TA",seq_genome)
+all_ta <- GRanges(all_ta,seqinfo = seqinfo(fa))
+```
+
+Bam analysis for `r path_bam`
+
+### Preliminary data
+
+#### Reads number in each library (on chromosom and plasmid)
+
+```{r echo=FALSE}
+seqnames(gr)
+```
+
+#### Cromosom and plasmid size
+
+```{r echo=FALSE}
+seqinfo(gr)
+```
+
+### Description bam file {.tabset}
+
+```{r echo=FALSE}
+list_qwidth <- endoapply(gAlns,qwidth)
+
+list_to_df <- function(x){
+ df <- as.data.frame(table(x))
+ colnames(df) <- c("size_read","freq")
+ df
+}
+
+list_qwidth <- lapply(list_qwidth,list_to_df)
+
+
+df_qwidth_plot <- list_qwidth
+names(df_qwidth_plot) <- NULL
+
+df_qwidth_plot <- do.call(full_join,c(df_qwidth_plot,by="size_read"))
+df_qwidth_plot$size_read <- as.factor(as.numeric(as.character(df_qwidth_plot$size_read)))
+colnames(df_qwidth_plot) <- c("size_read",bamfiles)
+df_qwidth_plot <- melt(df_qwidth_plot)
+
+```
+
+#### Reads size plot
+
+```{r echo=FALSE}
+ggplot(df_qwidth_plot,aes(x=size_read,y=value,fill=variable))+
+  geom_col(position = "dodge")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by size after trimming",
+        x ="Reads size", y = "Reads number")
+```
+
+#### Reads size plot log scale
+
+```{r echo=FALSE}
+ggplot(df_qwidth_plot,aes(x=size_read,y=value,fill=variable))+
+  geom_col(position = "dodge")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by size after trimming",
+        x ="Reads size", y = "Reads number")+
+  scale_y_log10()
+```
+
+#### Reads size table
+
+```{r echo=FALSE}
+
+df_qwidth_table <- list_qwidth
+names(df_qwidth_table) <- NULL
+
+df_qwidth_table <- do.call(full_join,c(df_qwidth_table,by="size_read"))
+df_qwidth_table$size_read <- as.factor(as.numeric(as.character(df_qwidth_table$size_read)))
+df_qwidth_table <- df_qwidth_table %>%
+  arrange(size_read)
+colnames(df_qwidth_table) <- c("size_read",bamfiles)
+
+kable(df_qwidth_table)
+
+```
+
+### Insert categorization
+
+```{r echo=FALSE}
+
+all_ta <- GRanges(vmatchPattern("TA",fa))
+
+all_tn_unique_insertion <- function(bam){
+  test <- unique(resize(unname(granges(bam)),2))
+}
+
+lst_all_tn_unique_insertion <- lapply(gAlns,all_tn_unique_insertion)
+
+add_seq_start <- function(granges,fa){
+  granges$seq_start <- fa[granges]
+  granges
+}
+
+lst_all_tn_unique_insertion <- lapply(lst_all_tn_unique_insertion,add_seq_start,fa)
+```
+
+#### TA number in genome
+
+```{r echo=FALSE}
+length(all_ta)
+```
+
+#### Unique Tn insertion number in each library
+
+```{r echo=FALSE}
+elementNROWS(lst_all_tn_unique_insertion)
+```
+
+#### Tn insertion on nucleotides {.tabset}
+
+```{r echo=FALSE}
+
+seq_table <- function(lst){
+  table <- lst$seq_start
+  a <- table(table)
+  a
+}
+
+lst_seq_table <- lapply(lst_all_tn_unique_insertion, seq_table)
+lst_seq_table
+```
+
+```{r echo=FALSE}
+df_seq_table <- function(lst){
+  tmp <- as.data.frame(lst)
+  tmp
+}
+lst_df_seq_table <- lapply(lst_seq_table, df_seq_table)
+
+graph <- ggplot(bind_rows(lst_df_seq_table, .id="data_frame"), aes(table, Freq, fill=data_frame, colour=data_frame))+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by inserted nuclotide",
+        x ="Binucleotide", y = "Reads number")
+```
+
+##### Plot wrap
+
+```{r echo=FALSE}
+graph+
+  geom_col()+
+  facet_wrap(~data_frame)
+```
+
+##### Plot wrap log
+
+```{r echo=FALSE}
+graph+
+  geom_col()+
+  facet_wrap(~data_frame)+
+  scale_y_log10()
+```
+
+##### Plot dodge
+
+```{r echo=FALSE}
+graph+
+  geom_col(position="dodge")
+```
+
+##### Plot dodge log
+
+```{r echo=FALSE}
+graph+
+  geom_col(position="dodge")+
+  scale_y_log10()
+```
+
+#### Tn insertion in the chromosome {.tabset}
+
+```{r echo=FALSE}
+lst_chr <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(table(start(ranges(tmp[seqnames(tmp) == "NC_010612.1",]))))
+  colnames(tmp) <- c("start","freq")
+  lst_chr[[i]] <- tmp
+}
+names(lst_chr) <- file_bam
+
+lst_chr_1000 <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(pmin(table(start(ranges(tmp[seqnames(tmp) == "NC_010612.1",]))),1000))
+  colnames(tmp) <- c("start","freq")
+  lst_chr_1000[[i]] <- tmp
+}
+names(lst_chr_1000) <- file_bam
+```
+
+##### Plot
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_chr, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[1]), by = 10000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+##### Plot zoom
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_chr_1000, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[1]), by = 10000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+#### Tn insertion in the plasmid {.tabset}
+
+```{r echo=FALSE}
+lst_pl <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(table(start(ranges(tmp[seqnames(tmp) == "NC_010604.1",]))))
+  colnames(tmp) <- c("start","freq")
+  lst_pl[[i]] <- tmp
+}
+names(lst_pl) <- file_bam
+
+lst_pl_100 <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(pmin(table(start(ranges(tmp[seqnames(tmp) == "NC_010604.1",]))),100))
+  colnames(tmp) <- c("start","freq")
+  lst_pl_100[[i]] <- tmp
+}
+names(lst_pl_100) <- file_bam
+```
+
+##### Plot
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_pl, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[2]), by = 1000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+##### Plot zoom
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_pl_100, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[2]), by = 1000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+
+#### Plot Tn insertion and density on chromosom
+
+```{r insert categorization VII, echo=FALSE}
+
+all_ta
+lst_all_tn_insertion
+
+mcols(all_ta)$count <- 0
+
+df <- as.data.frame(table(lst_all_tn_insertion[[1]]))
+df[c("name","ranges","strand")] <- str_split_fixed(df$Var1,":", 3)
+
+granges <- GRanges(
+  seqnames = df$name,
+  ranges= IRanges(df$ranges),
+  strand= df$strand
+  )
+mcols(granges)$freq <- df$Freq
+
+di_nucleo <- seq_genome[granges]
+mcols(granges)$dinucleo <- di_nucleo
+
+granges <- granges[granges$dinucleo == 'TA']
+mcols(granges)$dinucleo <- NULL
+
+all_ta_and_tn <- c(all_ta,granges)
+
+test <- data.frame(count=mcols(all_ta_and_tn)$count,
+           freq=mcols(all_ta_and_tn)$freq)
+mcols(all_ta_and_tn)$tot <- rowSums(test,na.rm = TRUE)
+
+plasmid <- all_ta_and_tn[seqnames(all_ta_and_tn)=="NC_010604.1",]
+
+x <- plasmid[start(plasmid)==1315,]
+
+GenomicRanges::reduce(x)
+plasmid[start(plasmid)==1315,]
+
+start_pl <- start(ranges(all_ta_and_tn[seqnames(all_ta_and_tn) == "NC_010604.1",]))
+table(start_pl)
+
+tmp_pl <- as.data.frame(table(start(ranges(all_ta_and_tn[seqnames(all_ta_and_tn) == "NC_010604.1",]))))
+colnames(tmp_pl) <- c("start","freq")
+
+
+
+
+
+lst_density <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(table(start(ranges(tmp[seqnames(tmp) == "NC_010612.1",]))))
+  colnames(tmp) <- c("start","freq")
+  lst_density[[i]] <- tmp
+}
+names(lst_density) <- file_bam
+
+ggplot(bind_rows(lst_density, .id="data_frame"),aes(x=as.numeric(start)))+
+  geom_histogram(aes(y=after_stat(density)), bins = round(length(all_ta)/100), colour="gray", fill="gray")+
+  geom_density(alpha=0.5)+
+  theme_classic()+
+  labs(title ="Tn insertion in the genome", 
+         x="Genome's position",
+         y="Number of insertion and density")
+
+#bin en fonction du nombre de ta un bin = 10 ta
+length(all_ta)/10
+
+```
+
+
+
+
+
+### Ad motif to 'TA'
+
+```{r}
+
+
+motif_gr <- resize(all_ta,width = 12,fix = "center") |>
+  trim()
+
+motif <- seq_genome[motif_gr]
+
+mcols(all_ta)$motif <- motif
+```
+
+
+
+
+
+
+```{r eval=FALSE}
+#tn fc 
+
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+
+fa <- getSeq(FaFile(paste(params$genome_dir,"genome.fasta",sep="/")))
+names(fa) <- sub(" .*","",names(fa))
+bam <- BamFile(file.path(params$data_dir,"BBB017_R1_cutadapt.Mm.ht2.bam"),yieldSize = 1000000)
+
+ta <- GRanges(vmatchPattern("TA",fa))
+
+rev <- summarizeOverlaps(
+  ta,
+  bam,
+  preprocess.reads = function(reads){
+    resize(granges(reads),2)
+  },
+  param = ScanBamParam(flag = scanBamFlag(isMinusStrand = TRUE)),
+  inter.feature = FALSE,
+  mode = "IntersectionStrict")
+
+fwd <- summarizeOverlaps(
+  ta,
+  bam,
+  preprocess.reads = function(reads){
+    resize(granges(reads),2)
+  },
+  param = ScanBamParam(flag = scanBamFlag(isMinusStrand = FALSE)),
+  inter.feature = FALSE,
+  mode = "IntersectionStrict")
+
+all <- data.frame(
+  pos=as.character(granges(fwd)),
+  fwd=as.vector(assay(fwd)),
+  rev=as.vector(assay(rev)))
+
+robj <- readRDS(paste(params$data_dir,"/Mm.ht2.tn.quantif/robj.rds",sep=""))
+
+rowData(robj)
+colData(robj)
+metadata(robj)
+assays(robj)
+
+
+e <- SummarizedExperiment(
+		apply(n,3,identity,simplify = FALSE),
+		colData = ht2_read_stat(sub(".bam$",".stat",path(bam_files)))
+	)
+	rowData(e)$feature_id <- rownames(e)
+	assays(e) <- c(List(counts=assay(e,default_counts)),assays(e))
+	assay(e,"counts")[is.na(assay(e,"counts"))] <- 0L
+	e$path <- path(bam_files)
+	e$lib <- colnames(e)
+
+
+	GRanges(seqinfo = )
+	
+all |>
+  str_split_fixed(all$pos,":", 2)
+
+
+all[c("name","ranges")] <- str_split_fixed(all$pos,":", 2)
+all[c("start","end")] <- str_split_fixed(all$ranges,"-",2)
+
+all$start <- as.numeric(all$start)
+all$end <- as.numeric(all$end)
+
+granges <- GRanges(
+  seqnames = all$name,
+  ranges= IRanges(all$start,all$end),
+  strand = NULL
+  )
+
+SummarizedExperiment(
+  assays = ,
+  rowRanges = granges,
+  colData = ht2_read_stat(sub(".bam$",".stat",path(bam_files)))
+)
+
+
+granges(all$pos)
+row_ranges <- GRanges
+str(all)
+
+
+
+
+
+
+#sum(assay(rev)>10)
+#sum(assay(fwd)>10)
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r echo=FALSE, eval=FALSE}
+
+summarizeOverlaps(listeTA granges unstarnded,listebam,preprocess resize a deux)
+
+
+bam <- readGAlignments(file = paste(params$data_dir,"BBB017_R1_trimmed.Mm.bwamem.bam",sep="/"))
+
+z <- readFastq(params$data_dir,"BBB017_R1_trimmed.fastq.gz")
+
+fa <- getSeq(FaFile(paste(params$genome_dir,"genome.fasta",sep="/")))
+names(fa) <- sub(" .*","",names(fa))
+
+all_ta <- GRanges(vmatchPattern("TA",fa))
+all_tn_in <- unique(resize(unname(granges(bam)),2))
+
+all_ta_and_tn <- unique(c(all_ta,all_tn_in))
+all_ta_and_tn$seq_start <- fa[all_ta_and_tn]
+all_tn_in$seq_start <- fa[all_tn_in]
+
+tn_in <- resize(unname(granges(bam)),2)
+
+start_tn_in <- as.data.frame(start(tn_in))
+colnames(start_tn_in) <- c("start_tn_in")
+
+tn_in
+
+x <- as.data.frame(table(tn_in))
+x[c("name","ranges","strand")] <- str_split_fixed(x$tn_in, ":", 3)
+x[c("start","end")] <- str_split_fixed(x$ranges,"-",2)
+
+IRanges(x$ranges)
+
+gr <- GRanges(
+  seqnames = Rle(x$name),
+  ranges = IRanges(x$ranges),
+  strand = Rle(x$strand),
+  freq = x$Freq
+)
+
+fa
+
+gr$di_nucleo_start <- fa[gr]
+gr[gr$di_nucleo_start == "TA",]
+
+gr[seqnames(gr)=="NC_010612.1",]
+
+y <- cigarOpTable(cigar(bam))
+y <- as.data.frame(y)
+
+plot(table(y$S))
+
+str(z)
+
+as.data.frame(z)
+id(z)[[1]]
+
+
+
+z$test <- gsub(" 1:N:0:ATCACG","",id(z))
+
+z2[id(z2) == "K00341:35:HHVKYBBXX:6:1228:12834:39031",]
+sum(id(z2) == "K00341:35:HHVKYBBXX:6:1228:12834:39031")
+# K00341:35:HHVKYBBXX:6:1228:12834:39031
+
+
+# CGGGGACTTATCAGCCAACCTGTTACACGCCACTGACGTACGAAGCGGTCAGTCCCACCTGCCGGCGGCAAAGTCGGCTCATGGCTTTACGGATTTTGAA @K00341:35:HHVKYBBXX:6:1228:12834:39031 1:N:0:ATCACG
+# CGGGGACTTATCAGCCAACCTGTTAGATAGTCACGGCCAACCAAATTCTGTCAGCGGTGCTGATTCTCATGCCCGTGGGAACTCTGGTCCGCCGGCGCCG @K00341:35:HHVKYBBXX:6:1114:14955:22239 1:N:0:ATCACG
+# CGGGGACTTATCAGCTAACCTGTTAGCTGTCCAGGTAGGCCTGCGAGATCCAGTCAGGAATGTCGGCGGGTTGGGTGAACGCCGTCCACGCCCCGACATC @K00341:35:HHVKYBBXX:6:2203:8115:36306 1:N:0:ATCACG
+
+# seq a trim 
+# CGGGGACTTATCAGCCAACCTGT'23'TA
+
+#--adapt --front
+
+
+CGGGGACTTATCAGCCAACCTGTTACGCGGCCCCCCGCGGCCCGGCCCGGCCCCCGGCCGCCGCCCCCCCCCCCCCGCCCGCGGCCCGGCCCCCCGCGCC
+CGGGGACTTATCAGCCAACCTGTTACACGCCACTGACGTACGAAGCGGTCAGTCCCACCTGCCGGCGGCAAAGTCGGCTCATGGCTTTACGGATTTTGAA
+CGGGGACTTATCAGCCAACCTGTTAGATAGTCACGGCCAACCAAATTCTGTCAGCGGTGCTGATTCTCATGCCCGTGGGAACTCTGGTCCGCCGGCGCCG
+CGGGGACTTATCAGCTAACCTGTTAGCTGTCCAGGTAGGCCTGCGAGATCCAGTCAGGAATGTCGGCGGGTTGGGTGAACGCCGTCCACGCCCCGACATC
+
+
+sread(z)
+id(z)
+quality(z)
+
+
+
+
+vmatchPattern("TA",fa)
+vmatchPattern("TA",reverseComplement(fa)) 
+
+vcountPattern("TA",fa)
+vcountPattern("TA",reverseComplement(fa)) 
+
+tn_in$seq_start <- fa[tn_in]
+tn_in[tn_in$seq_start=="TA"]
+
+tn_in_ta <- tn_in[tn_in$seq_start=="TA"]
+tn_in_ta
+length(tn_in_ta)
+unique(tn_in_ta)
+length(all_ta)
+
+all_ta <- GRanges(vmatchPattern("TA",fa))
+str(fa)
+intersect(tn_in_ta,all_ta,ignore.strand=TRUE)
+reduce(tn_in_ta)
+
+q <- table(tn_in)
+w <- q[q>10]
+str(tn_in)
+as.data.frame(w)
+
+```
+
+
+
+
+
+
+
+```{r echo=FALSE, eval=FALSE}
+
+# bam1 <- readGAlignments(file = paste(params$data_dir,"BBB017_R1_trimmed.Mm.bwamem.bam",sep="/"),use.names = TRUE)
+
+# sum(all_ta_and_tn$seq_start == "TA")
+
+# start(ranges(all_tn_in[seqnames(all_tn_in) == "NC_010612.1",]))
+
+# ggplot(y,aes(start,freq))+
+#  geom_col()
+
+
+#x <- as.data.frame(table(start(ranges(tn_in[seqnames(tn_in) == "NC_010612.1",]))))
+#colnames(x) <- c("start","freq")
+
+# y <- x[c(1:1000),]
+
+# ggplot(y,aes(start,pmin(freq,50)))+
+#  geom_col()+
+#  theme_classic()+
+#  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+#        text = element_text(size=5))+
+#  geom_hline(yintercept = 10)
+
+#ggplot(x,aes(start,pmin(freq,100)))+
+#  geom_col()+
+#  theme_classic()+
+#  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+#        text = element_text(size=5))+
+#  geom_hline(yintercept = 10)
+
+
+# all_tn_in <- resize(unname(unstrand(granges(bam))),2)
+# seqnames(all_tn_in) == "NC_010612.1"
+# all_tn_in[seqnames(all_tn_in) == "NC_010612.1",]
+# ranges(all_tn_in)
+# plot(start(ranges(all_tn_in[seqnames(all_tn_in) == "NC_010612.1",])))
+
+```
+
+
+
+
+

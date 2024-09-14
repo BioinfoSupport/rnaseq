@@ -1,0 +1,178 @@
+---
+title: "Filtering with cutadapt"
+output: html_document
+date: "2024-05-08"
+params:
+  data_dir: "data/fastq/fastq"
+---
+
+```{r echo=FALSE}
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  install.packages("jsonlite")
+}
+if (!requireNamespace("purrr", quietly = TRUE)) {
+  install.packages("purrr")
+}
+if (!requireNamespace("reshape2", quietly = TRUE)) {
+  install.packages("reshape2")
+}
+```
+
+```{r echo=FALSE, message=FALSE}
+library("tidyverse")
+library("jsonlite")
+library("purrr")
+library("knitr")
+library("ShortRead")
+library("reshape2")
+```
+
+```{r echo=FALSE}
+json <- function(file){
+  json_content <- fromJSON(file)
+  return(json_content)
+}
+```
+
+```{r echo=FALSE}
+files_list <- list.files(path = params$data_dir, pattern = "*_R1_001.cutadapt.json", full.names = TRUE, recursive = TRUE)
+files_list_fastqgz <- list.files(path = params$data_dir, pattern = "*_R1_001.cutadapt.fastq.gz", full.names = TRUE, recursive = TRUE)
+fastqgz <- list.files(path = params$data_dir, pattern = "*_R1_001.fastq.gz", full.names = TRUE, recursive = TRUE)
+names <- dir(params$data_dir,pattern = "*_R1_001.cutadapt.json")
+```
+
+Result table for `r files_list`
+
+# Final Table 
+
+### Filtering result
+
+```{r echo=FALSE, results='asis'}
+
+list_tmp_01 <- list()
+list_tmp_02 <- list()
+list_tmp_03 <- list()
+
+for (i in 1:length(files_list)) {
+  x <- fromJSON(files_list[i])
+  list_tmp_01[[i]] <- unlist(x$read_counts)
+  list_tmp_02[[i]]<- unlist(x$basepair_counts)
+  list_tmp_03[[i]]<- x$adapters_read1$five_prime_end$trimmed_lengths[[1]]
+}
+
+tesbeau <- "quand je serai grand, je veux être comme toi"
+print(tesbeau)
+
+read_counts <- do.call(rbind,list_tmp_01)
+row.names(read_counts) <- c(files_list)
+read_counts <- as.data.frame(read_counts)
+read_counts$filtered.too_short_percent <- read_counts$filtered.too_short/read_counts$input*100
+read_counts$filtered.too_long_percent <- read_counts$filtered.too_long/read_counts$input*100
+read_counts$output_percent <- read_counts$output/read_counts$input*100
+read_counts$read1_with_adapter_percent <- read_counts$read1_with_adapter/read_counts$input*100
+read_counts <- read_counts %>% relocate(filtered.too_short_percent, .after = filtered.too_short) %>% relocate(filtered.too_long_percent, .after = filtered.too_long) %>% relocate(output_percent, .after = output) %>% relocate(read1_with_adapter_percent, .after = read1_with_adapter)
+
+kable(read_counts,
+      caption = "Read counts",
+      col.names = c("Input reads",
+                    "Too short",
+                    "Too short (%)",
+                    "Too long",
+                    "Too long (%)",
+                    "Output reads",
+                    "Output reads (%)",
+                    "Read_1 with adapter",
+                    "Read_1 with adapter (%)"))
+
+
+basepair_counts <- do.call(rbind,list_tmp_02)
+row.names(basepair_counts) <- c(files_list)
+basepair_counts <- as.data.frame(basepair_counts)
+basepair_counts$output_percent <- basepair_counts$output/basepair_counts$input*100
+basepair_counts <- basepair_counts %>% relocate(output_percent, .after = output)
+
+kable(basepair_counts,
+      caption = "Basepair counts",
+      col.names = c("Input bases",
+                    "Input bases read_1",
+                    "Output bases",
+                    "Output bases (%)",
+                    "Output bases read_1"))
+
+y <- unlist(lapply(list_tmp_03,FUN=nrow))
+liste <- list()
+listedf <- list()
+
+for (z in 1:length(list_tmp_03)) {
+  for (i in 1:y[z]) {
+    test <- list_tmp_03[[z]]
+    temp <- test[i,]
+    a <- list(
+      len=temp$len,
+      expect=temp$expect,
+      count_0_mismatch=unlist(temp$counts)[1],
+      count_1_mismatch=unlist(temp$counts)[2]
+      )
+    zz <- as.data.frame(a)
+    zz$counts <- rowSums(zz[,c(3,4)],na.rm=TRUE)
+    liste[[i]] <- zz
+    listedf[[z]] <- do.call(rbind,liste)
+  }
+} 
+
+for (i in 1:length(listedf)) {
+  print(kable(listedf[[i]],
+              caption = fastqgz[[i]],
+              col.names = c("Cutting length",
+                            "Expect",
+                            "Counts with 0 mismatch",
+                            "Counts with 1 mismatch",
+                            "Total counts")))
+}
+
+```
+
+
+### Read distribution after trimming {.tabset}
+
+#### Count
+```{r read distribution I, echo=FALSE, message=FALSE, warning=FALSE}
+test_01 <- function(fastq){
+  x <- as.data.frame(table(width(sread(readFastq(fastq)))))
+}
+
+x <- lapply(files_list_fastqgz,test_01)
+
+bla <- x %>%
+  purrr::reduce(full_join,by="Var1")
+
+#bla <- do.call(full_join,c(x,by="Var1"))
+
+bla$Var1 <- as.factor(as.numeric(as.character(bla$Var1)))
+
+colnames(bla) <- c("length_read",files_list_fastqgz)
+
+aa <- melt(bla)
+
+graph <- ggplot(aa,aes(length_read,value,fill=variable))+
+  geom_col(position = "dodge")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by size after trimming",
+        x ="Reads size", y = "Reads number")
+
+graph
+
+```
+
+#### Log
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+graph +
+  scale_y_log10()
+```
+
+
+

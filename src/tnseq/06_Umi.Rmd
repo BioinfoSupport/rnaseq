@@ -1,0 +1,45 @@
+---
+title: "Test on UMI"
+output: html_document
+date: "2024-06-26"
+params:
+  data_dir: "data/fastq/merge"
+  genome_dir: "data/ref/Mm"
+---
+
+```{r}
+library("GenomicRanges")
+library("GenomicAlignments")
+library("tidyverse")
+
+path_bam <- list.files(path = params$data_dir, pattern = "*_cutadapt.Mm.ht2.bam$", full.names = TRUE)
+file_bam <- list.files(path = params$data_dir, pattern = "*_cutadapt.Mm.ht2.bam$", full.names = FALSE)
+
+umi <- scanBam(path_bam)
+
+df <- as.data.frame(umi)
+
+df <- df %>% separate(qname,c('qname','umi'),sep = "_")
+
+x <- df %>% 
+  select(c("umi","flag","strand","pos","seq")) %>%
+  unite("umi_seq",c("umi","seq"),sep="_") %>%
+  filter(flag != 4)
+
+
+
+summary(as.factor(x$flag))
+
+
+nrow(x)
+nrow(unique(x))
+
+table(x$flag)
+
+
+
+bam <- readGAlignments(path_bam)
+head(bam)
+
+```
+

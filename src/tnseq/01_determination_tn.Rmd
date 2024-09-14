@@ -1,0 +1,112 @@
+---
+title: "Transposon determination"
+output: html_document
+date: "2024-04-12"
+params:
+  genome_dir: "data/ref/Mm"
+  data_dir: "data/fastq/fastq"
+---
+
+```{r echo=FALSE, message=FALSE}
+library(ShortRead)
+library(reshape2)
+library(knitr)
+library(ggplot2)
+library(tidyverse)
+```
+
+
+### Consensus plot and table to determine transposon sequences {.tabset}
+
+```{r Consensus graph and seq to determine transposon, echo=FALSE}
+fastqgz <- list.files(path = params$data_dir, pattern = "*_R1_001.fastq.gz", full.names = TRUE, recursive = TRUE)
+
+list_f <- list()
+
+for (i in 1:length(fastqgz)) {
+  list_f[[i]] <- alphabetByCycle(sread(readFastq(fastqgz[i])))
+}
+
+names(list_f) <- fastqgz
+
+x <- list_f
+
+list=list()
+list_end=list()
+
+for (i in 1:length(fastqgz)) {
+  test <- x[[i]]
+  for (ii in 1:ncol(x[[i]])){
+    q <- test[,ii]
+    d <- as.data.frame(q[c(1:4)])
+    list[[ii]] <- d
+    list_end[[i]] <- do.call(cbind,list)
+  }
+  tmp <- list_end[[i]]
+  colnames(tmp) <- 1:100
+  tmp <- as.data.frame(t(tmp))
+  colnames(tmp) <- c("A","C","G","T")
+  tmp$cons <- colnames(tmp)[max.col(tmp,ties.method = "first")]
+  tmp$cycle <- rownames(tmp)
+  list_end[[i]] <- tmp
+}
+
+names(list_end) <- fastqgz
+
+list_plot=list()
+
+for(i in 1:length(list_end)){
+  tmp <- list_end[[i]]
+  tmp <- tmp[,-5]
+  tmp <- melt(tmp,id.vars=c("cycle"))
+  tmp$cycle <- as.numeric(tmp$cycle) 
+  list_plot[[i]] <- tmp
+}
+names(list_plot) <- fastqgz
+
+list_consensus=list()
+
+for(i in 1:length(list_end)){
+  tmp <- list_end[[i]]
+  tmp <- tmp$cons
+  list_consensus[[i]] <- tmp
+}
+names(list_consensus) <- fastqgz
+```
+
+
+#### Plot
+
+```{r echo=FALSE}
+ggplot(bind_rows(list_plot, .id="df"),aes(x=cycle,y=value,fill = variable))+
+  geom_bar(stat="identity",position =position_dodge())+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8))+
+  facet_grid(rows = vars(df))
+```
+
+
+#### Table
+
+```{r, echo = FALSE, results='asis'}
+for(i in 1:length(list_end)) {
+  tmp <- as.data.frame(list_end[i])
+  names(tmp) <- NULL
+  colnames(tmp) <- c("A","C","G","T","consensus","cycle")
+  print(kable(x = tmp[1:50,], 
+              caption = paste0("Frequency table for the '", names(list_end)[i]),
+              align = "rrrrcc"))
+}
+```
+
+
+
+### Consensus -> Transposon sequences
+
+```{r echo=FALSE}
+list_consensus <- lapply(list_consensus,paste,collapse="")
+df <- as.data.frame(unlist(list_consensus))
+kable(df,col.names = c("lib","Seq"),
+      caption = "Consensus table")
+```

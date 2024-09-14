@@ -1,0 +1,731 @@
+---
+title: "Data mapping with hisat2"
+output: html_document
+date: "2024-05-09"
+params:
+  data_dir: "data/fastq/fastq"
+  genome_dir: "data/ref/Mm"
+  quantif_rds: "data/fastq/fastq/Mm.ht2.tn.quantif/robj.rds"
+---
+
+```{r}
+#nb de read/nb de ta*0.1
+#cov <- coverage()
+```
+
+
+```{r install packages, echo=FALSE}
+if (!requireNamespace("GenomicAlignments", quietly = TRUE)) {
+  install.packages("GenomicAlignments")
+}
+if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
+  install.packages("GenomicRanges")
+}
+if (!requireNamespace("ggseqlogo", quietly = TRUE)) {
+  install.packages("ggseqlogo")
+}
+if (!requireNamespace("gridExtra", quietly = TRUE)) {
+  install.packages("gridExtra")
+}
+```
+
+```{r load library, echo=FALSE, message=FALSE}
+library("GenomicAlignments")
+library("knitr")
+library("ggplot2")
+library("stringr")
+library("ShortRead")
+library("tidyverse")
+library("Rsamtools")
+library("reshape2")
+library("GenomicRanges")
+library("ggseqlogo")
+library("gridExtra")
+```
+
+```{r Load data, echo=FALSE}
+fa_file <- FaFile(file.path(params$genome_dir,"genome.fasta"))
+
+path_bam <- list.files(path = params$data_dir, pattern = "*_R1_001_cutadapt.Mm.ht2.bam$", full.names = TRUE)
+file_bam <- list.files(path = params$data_dir, pattern = "*_R1_001_cutadapt.Mm.ht2.bam$", full.names = FALSE)
+
+# liste_bam <- BamFileList(dir(params$data_dir,"bam$"))
+
+bamfiles <- dir(path = params$data_dir,pattern="*_R1_001_cutadapt.Mm.ht2.bam$",full.names=TRUE)
+
+x <- readRDS(params$quantif_rds)
+```
+
+```{r echo=FALSE}
+fa <- getSeq(fa_file)
+names(fa) <- sub(" .*","",names(fa))
+
+gAlns <- lapply(bamfiles,readGAlignments)
+names(gAlns) <- file_bam
+
+gr <- GRangesList(gAlns)
+
+lst <- lapply(gAlns,seqinfo)
+names(lst) <- file_bam
+
+all_tn_insertion <- function(bam){
+  test <- resize(unname(granges(bam)),2)
+}
+lst_all_tn_insertion <- lapply(gAlns,all_tn_insertion)
+
+seq_genome <- fa
+names(seq_genome) <- sub(" .*","",names(seq_genome))
+
+all_ta <- vmatchPattern("TA",seq_genome)
+all_ta <- GRanges(all_ta,seqinfo = seqinfo(fa))
+```
+
+Bam analysis for `r path_bam`
+
+### Preliminary data
+
+#### Reads number in each library (on chromosom and plasmid)
+
+```{r echo=FALSE}
+seqnames(gr)
+```
+
+#### Cromosom and plasmid size
+
+```{r echo=FALSE}
+seqinfo(gr)
+```
+
+### Description bam file {.tabset}
+
+```{r echo=FALSE}
+list_qwidth <- endoapply(gAlns,qwidth)
+
+list_to_df <- function(x){
+ df <- as.data.frame(table(x))
+ colnames(df) <- c("size_read","freq")
+ df
+}
+
+list_qwidth <- lapply(list_qwidth,list_to_df)
+
+
+df_qwidth_plot <- list_qwidth
+names(df_qwidth_plot) <- NULL
+
+# df_qwidth_plot <- do.call(full_join,c(df_qwidth_plot,by="size_read"))
+
+df_qwidth_plot <- df_qwidth_plot %>%
+  purrr::reduce(full_join,by="size_read")
+
+
+df_qwidth_plot$size_read <- as.factor(as.numeric(as.character(df_qwidth_plot$size_read)))
+colnames(df_qwidth_plot) <- c("size_read",bamfiles)
+df_qwidth_plot <- melt(df_qwidth_plot)
+
+```
+
+#### Reads size plot
+
+```{r echo=FALSE}
+ggplot(df_qwidth_plot,aes(x=size_read,y=value,fill=variable))+
+  geom_col(position = "dodge")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by size after trimming",
+        x ="Reads size", y = "Reads number")
+```
+
+#### Reads size plot log scale
+
+```{r echo=FALSE}
+ggplot(df_qwidth_plot,aes(x=size_read,y=value,fill=variable))+
+  geom_col(position = "dodge")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by size after trimming",
+        x ="Reads size", y = "Reads number")+
+  scale_y_log10()
+```
+
+#### Reads size table
+
+```{r echo=FALSE}
+
+df_qwidth_table <- list_qwidth
+names(df_qwidth_table) <- NULL
+
+# df_qwidth_table <- do.call(full_join,c(df_qwidth_table,by="size_read"))
+
+df_qwidth_table <- df_qwidth_table %>%
+  purrr::reduce(full_join,by="size_read")
+
+df_qwidth_table$size_read <- as.factor(as.numeric(as.character(df_qwidth_table$size_read)))
+df_qwidth_table <- df_qwidth_table %>%
+  arrange(size_read)
+colnames(df_qwidth_table) <- c("size_read",bamfiles)
+
+kable(df_qwidth_table)
+
+```
+
+### Insert categorization
+
+```{r echo=FALSE}
+
+all_ta <- GRanges(vmatchPattern("TA",fa))
+
+all_tn_unique_insertion <- function(bam){
+  test <- unique(resize(unname(granges(bam)),2))
+}
+
+lst_all_tn_unique_insertion <- lapply(gAlns,all_tn_unique_insertion)
+
+add_seq_start <- function(granges,fa){
+  granges$seq_start <- fa[granges]
+  granges
+}
+
+lst_all_tn_unique_insertion <- lapply(lst_all_tn_unique_insertion,add_seq_start,fa)
+```
+
+#### TA number in genome
+
+```{r echo=FALSE}
+length(all_ta)
+```
+
+#### Unique Tn insertion number in each library
+
+```{r echo=FALSE}
+elementNROWS(lst_all_tn_unique_insertion)
+```
+
+#### Tn insertion on nucleotides {.tabset}
+
+```{r echo=FALSE}
+
+seq_table <- function(lst){
+  table <- lst$seq_start
+  a <- table(table)
+  a
+}
+
+lst_seq_table <- lapply(lst_all_tn_unique_insertion, seq_table)
+lst_seq_table
+```
+
+```{r echo=FALSE}
+df_seq_table <- function(lst){
+  tmp <- as.data.frame(lst)
+  tmp
+}
+lst_df_seq_table <- lapply(lst_seq_table, df_seq_table)
+
+graph <- ggplot(bind_rows(lst_df_seq_table, .id="data_frame"), aes(table, Freq, fill=data_frame, colour=data_frame))+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by inserted nuclotide",
+        x ="Binucleotide", y = "Reads number")
+```
+
+##### Plot wrap
+
+```{r echo=FALSE}
+graph+
+  geom_col()+
+  facet_wrap(~data_frame)
+```
+
+##### Plot wrap log
+
+```{r echo=FALSE}
+graph+
+  geom_col()+
+  facet_wrap(~data_frame)+
+  scale_y_log10()
+```
+
+##### Plot dodge
+
+```{r echo=FALSE}
+graph+
+  geom_col(position="dodge")
+```
+
+##### Plot dodge log
+
+```{r echo=FALSE}
+graph+
+  geom_col(position="dodge")+
+  scale_y_log10()
+```
+
+#### Tn insertion in the chromosome {.tabset}
+
+```{r echo=FALSE}
+lst_chr <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(table(start(ranges(tmp[seqnames(tmp) == "NC_010612.1",]))))
+  colnames(tmp) <- c("start","freq")
+  lst_chr[[i]] <- tmp
+}
+names(lst_chr) <- file_bam
+
+lst_chr_1000 <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(pmin(table(start(ranges(tmp[seqnames(tmp) == "NC_010612.1",]))),1000))
+  colnames(tmp) <- c("start","freq")
+  lst_chr_1000[[i]] <- tmp
+}
+names(lst_chr_1000) <- file_bam
+```
+
+##### Plot
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_chr, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[1]), by = 10000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+##### Plot zoom
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_chr_1000, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[1]), by = 10000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+#### Tn insertion in the plasmid {.tabset}
+
+```{r echo=FALSE}
+lst_pl <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(table(start(ranges(tmp[seqnames(tmp) == "NC_010604.1",]))))
+  colnames(tmp) <- c("start","freq")
+  lst_pl[[i]] <- tmp
+}
+names(lst_pl) <- file_bam
+
+lst_pl_100 <- list()
+
+for(i in 1:length(lst_all_tn_insertion)){
+  tmp <- lst_all_tn_insertion[[i]]
+  tmp <- as.data.frame(pmin(table(start(ranges(tmp[seqnames(tmp) == "NC_010604.1",]))),100))
+  colnames(tmp) <- c("start","freq")
+  lst_pl_100[[i]] <- tmp
+}
+names(lst_pl_100) <- file_bam
+```
+
+##### Plot
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_pl, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[2]), by = 1000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+##### Plot zoom
+
+```{r echo=FALSE}
+ggplot(bind_rows(lst_pl_100, .id="data_frame"), aes(start, freq, fill = data_frame, colour=data_frame))+
+  geom_col()+
+  theme_classic()+
+  facet_wrap(~data_frame)+
+  scale_x_discrete(breaks = seq(from = 1, to = width(fa[2]), by = 1000)) +
+  theme(axis.text.x = element_text(angle = 60,hjust = 1), 
+        text = element_text(size=8),
+        legend.position = "bottom")+
+  labs(title="Number of reads by position in chromosom",
+        x ="Position on chromosom", y = "Reads number by position")
+```
+
+
+#### Plot Tn insertion and density on chromosom
+
+```{r echo=FALSE}
+
+test <- GRanges(rowRanges(x))
+mcols(test) <- assays(x)$count
+
+lst_density <- list()
+
+for(i in 1:length(colData(x)$lib)){
+  tmp <- GRanges(rowRanges(x))
+  mcols(tmp) <- mcols(test)[i]
+  tmp_start <- start(tmp)
+  tmp_count <- mcols(tmp)
+  df <- data.frame(start=tmp_start,
+             count=tmp_count)
+  colnames(df) <- c("starting","freq")
+  lst_density[[i]]<- df
+  lst_density
+}
+names(lst_density) <- file_bam
+
+
+
+
+
+length(row_number(lst_density[[1]]))
+length(row_number(lst_density[[2]]))
+
+ggplot(lst_density[[1]],aes(x=as.numeric(starting)))+
+  geom_histogram(aes(y=after_stat(density)), bins = 100, colour="gray", fill="gray")+
+  geom_density(alpha=0.5)+
+  theme_classic()+
+  labs(title ="Tn insertion in the genome", 
+         x="Genome's position",
+         y="Number of insertion and density")
+
+ggplot(lst_density[[2]],aes(x=as.numeric(starting)))+
+  geom_histogram(aes(y=after_stat(density)), bins = 100, colour="gray", fill="gray")+
+  geom_density(alpha=0.5)+
+  theme_classic()+
+  labs(title ="Tn insertion in the genome", 
+         x="Genome's position",
+         y="Number of insertion and density")
+
+
+ggplot(bind_rows(lst_density, .id="data_frame"),aes(x=as.numeric(starting)))+
+  geom_histogram(aes(y=after_stat(density)), bins = 50, colour="gray", fill="gray")+
+  geom_density(alpha=0.5)+
+  theme_classic()+
+  labs(title ="Tn insertion in the genome", 
+         x="Genome's position",
+         y="Number of insertion and density")
+
+#NC_010612.1
+#NC_010604.1
+```
+
+### Ad motif to 'TA'
+```{r echo=FALSE}
+X <- 10
+test <- GRanges(rowRanges(x))
+mcols(test) <- assays(x)$count
+motif_gr <- resize(test,width = X,fix = "center") |>
+  trim()
+mcols(motif_gr)$motif <- seq_genome[motif_gr]
+mcols(motif_gr)$tot_in <- mcols(motif_gr) %>% 
+  as.data.frame() %>%
+  select_if(is.numeric) %>%
+  apply(1,sum) %>%
+  as.data.frame()
+
+summary(mcols(motif_gr)$tot_in)
+
+motif_no_in <- motif_gr
+
+df <- as.data.frame(motif_no_in)
+df$motif_col <- df$motif
+
+df <- df %>%
+  separate(motif, into = paste0("N", 1:X), sep = 1:(X-1)) %>%
+  mutate_if(is.character,as.factor)
+
+df_plot <- df %>%
+  select(N1:paste("N",X,sep=""))
+
+df_plot <- as.data.frame(summary(df_plot))
+df_plot[c("base","freq")] <- str_split_fixed(df_plot$Freq,":",2)
+df_plot <- df_plot %>%
+  select(Var2,base,freq)
+df_plot$base <- as.factor(df_plot$base) 
+df_plot$freq <- as.numeric(df_plot$freq) 
+
+df_plot_all <- df_plot
+df_plot_all$ins <- "all_no_in"
+
+df_plot_all <- df_plot_all %>%
+  drop_na()
+
+ggplot(df_plot_all,aes(Var2,freq,color=base,fill=base))+
+  geom_col()
+
+
+### with no insertion
+
+motif_no_in <- motif_gr[motif_gr$tot_in == 0,]
+
+df <- as.data.frame(motif_no_in)
+df$motif_col <- df$motif
+
+df <- df %>%
+  separate(motif, into = paste0("N", 1:X), sep = 1:(X-1)) %>%
+  mutate_if(is.character,as.factor)
+
+df_plot <- df %>%
+  select(N1:paste("N",X,sep=""))
+
+df_plot <- as.data.frame(summary(df_plot))
+df_plot[c("base","freq")] <- str_split_fixed(df_plot$Freq,":",2)
+df_plot <- df_plot %>%
+  select(Var2,base,freq)
+df_plot$base <- as.factor(df_plot$base) 
+df_plot$freq <- as.numeric(df_plot$freq) 
+
+df_plot_a <- df_plot
+df_plot_a$ins <- "a_no_in"
+
+ggplot(df_plot,aes(Var2,freq,color=base,fill=base))+
+  geom_col()
+
+### with lowinsertion
+
+motif_no_in <- motif_gr[motif_gr$tot_in > 0 & motif_gr$tot_in < 10,]
+
+df <- as.data.frame(motif_no_in)
+df$motif_col <- df$motif
+
+df <- df %>%
+  separate(motif, into = paste0("N", 1:X), sep = 1:(X-1)) %>%
+  mutate_if(is.character,as.factor)
+
+df_plot <- df %>%
+  select(N1:paste("N",X,sep=""))
+
+df_plot <- as.data.frame(summary(df_plot))
+df_plot[c("base","freq")] <- str_split_fixed(df_plot$Freq,":",2)
+df_plot <- df_plot %>%
+  select(Var2,base,freq)
+df_plot$base <- as.factor(df_plot$base) 
+df_plot$freq <- as.numeric(df_plot$freq) 
+
+df_plot_b <- df_plot
+df_plot_b$ins <- "b_low_in"
+
+ggplot(df_plot,aes(Var2,freq,color=base,fill=base))+
+  geom_col()
+
+### with insertion
+
+motif_no_in <- motif_gr[motif_gr$tot_in > 100 & motif_gr$tot_in < 200,]
+
+df <- as.data.frame(motif_no_in)
+df$motif_col <- df$motif
+
+df <- df %>%
+  separate(motif, into = paste0("N", 1:X), sep = 1:(X-1)) %>%
+  mutate_if(is.character,as.factor)
+
+df_plot <- df %>%
+  select(N1:paste("N",X,sep=""))
+
+df_plot <- as.data.frame(summary(df_plot))
+df_plot[c("base","freq")] <- str_split_fixed(df_plot$Freq,":",2)
+df_plot <- df_plot %>%
+  select(Var2,base,freq)
+df_plot$base <- as.factor(df_plot$base) 
+df_plot$freq <- as.numeric(df_plot$freq) 
+
+df_plot_c <- df_plot
+df_plot_c$ins <- "c_with_in"
+
+ggplot(df_plot,aes(Var2,freq,color=base,fill=base))+
+  geom_col()
+
+### with lot insertion
+
+motif_no_in <- motif_gr[motif_gr$tot_in > 200,]
+
+df <- as.data.frame(motif_no_in)
+df$motif_col <- df$motif
+
+df <- df %>%
+  separate(motif, into = paste0("N", 1:X), sep = 1:(X-1)) %>%
+  mutate_if(is.character,as.factor)
+
+df_plot <- df %>%
+  select(N1:paste("N",X,sep=""))
+
+df_plot <- as.data.frame(summary(df_plot))
+df_plot[c("base","freq")] <- str_split_fixed(df_plot$Freq,":",2)
+df_plot <- df_plot %>%
+  select(Var2,base,freq)
+df_plot$base <- as.factor(df_plot$base) 
+df_plot$freq <- as.numeric(df_plot$freq) 
+
+df_plot_d <- df_plot
+df_plot_d$ins <- "d_with_lot_in"
+
+
+
+ggplot(df_plot,aes(Var2,freq,color=base,fill=base))+
+  geom_col()
+
+df_tot <- bind_rows(df_plot_a,df_plot_b,df_plot_c,df_plot_d)
+df_tot$ins <- as.factor(df_tot$ins)
+
+df_tot <- df_tot %>%
+  drop_na()
+
+ggplot(df_tot,aes(Var2,freq,color=base,fill=base))+
+  geom_col(position="fill")+
+  facet_grid(.~ins)
+
+ggplot(df_tot,aes(Var2,freq,color=base,fill=base))+
+  geom_col(position="fill")+
+  facet_grid(ins~.)
+
+
+ggplot(df_tot,aes(Var2,freq,color=base,fill=base))+
+  geom_col(position="dodge")+
+  facet_grid(ins~.,scales="free_y")
+```
+
+```{r echo=FALSE, warning=FALSE}
+ggplot_motif <- function(granges){
+  a <- granges$motif
+  a <- as.data.frame(a)
+  a1 <- ggseqlogo(a, method="bits")
+  a2 <- ggseqlogo(a, method="prob")
+  grid.arrange(a1, a2)
+}
+
+ggplot_motif(motif_gr)
+
+motif_no_in <- motif_gr[motif_gr$tot_in == 0,]
+ggplot_motif(motif_no_in)
+
+motif_low_in <- motif_gr[motif_gr$tot_in > 0 & motif_gr$tot_in < 10,]
+ggplot_motif(motif_low_in)
+
+motif_in <- motif_gr[motif_gr$tot_in > 100 & motif_gr$tot_in < 200,]
+ggplot_motif(motif_in)
+
+motif_lot_in <- motif_gr[motif_gr$tot_in > 200,]
+ggplot_motif(motif_lot_in)
+```
+
+
+
+#### 6
+
+```{r echo=FALSE}
+motif_gr <- resize(all_ta,width = 6,fix = "center") |>
+  trim()
+motif <- seq_genome[motif_gr]
+mcols(all_ta)$motif <- motif
+plot(table(all_ta$motif))
+```
+
+#### 4
+
+```{r echo=FALSE}
+motif_gr <- resize(all_ta,width = 4,fix = "center") |>
+  trim()
+motif <- seq_genome[motif_gr]
+mcols(all_ta)$motif <- motif
+plot(table(all_ta$motif))
+```
+
+
+
+
+```{r insert categorization VII, echo=FALSE, eval=FALSE}
+
+all_ta
+lst_all_tn_insertion
+
+mcols(all_ta)$count <- 0
+
+df <- as.data.frame(table(lst_all_tn_insertion[[1]]))
+df[c("name","ranges","strand")] <- str_split_fixed(df$Var1,":", 3)
+
+granges <- GRanges(
+  seqnames = df$name,
+  ranges= IRanges(df$ranges),
+  strand= df$strand
+  )
+mcols(granges)$freq <- df$Freq
+
+di_nucleo <- seq_genome[granges]
+mcols(granges)$dinucleo <- di_nucleo
+
+granges <- granges[granges$dinucleo == 'TA']
+mcols(granges)$dinucleo <- NULL
+
+all_ta_and_tn <- c(all_ta,granges)
+
+test <- data.frame(count=mcols(all_ta_and_tn)$count,
+           freq=mcols(all_ta_and_tn)$freq)
+mcols(all_ta_and_tn)$tot <- rowSums(test,na.rm = TRUE)
+
+plasmid <- all_ta_and_tn[seqnames(all_ta_and_tn)=="NC_010604.1",]
+
+x <- plasmid[start(plasmid)==1315,]
+
+GenomicRanges::reduce(x)
+plasmid[start(plasmid)==1315,]
+
+start_pl <- start(ranges(all_ta_and_tn[seqnames(all_ta_and_tn) == "NC_010604.1",]))
+table(start_pl)
+
+tmp_pl <- as.data.frame(table(start(ranges(all_ta_and_tn[seqnames(all_ta_and_tn) == "NC_010604.1",]))))
+colnames(tmp_pl) <- c("start","freq")
+
+#bin en fonction du nombre de ta un bin = 10 ta
+```
+
+
+
+
+
+```{r eval=FALSE}
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+
+e <- SummarizedExperiment(
+		apply(n,3,identity,simplify = FALSE),
+		colData = ht2_read_stat(sub(".bam$",".stat",path(bam_files)))
+	)
+	rowData(e)$feature_id <- rownames(e)
+	assays(e) <- c(List(counts=assay(e,default_counts)),assays(e))
+	assay(e,"counts")[is.na(assay(e,"counts"))] <- 0L
+	e$path <- path(bam_files)
+	e$lib <- colnames(e)
+
+SummarizedExperiment(
+  assays = ,
+  rowRanges = granges,
+  colData = ht2_read_stat(sub(".bam$",".stat",path(bam_files)))
+)
+
+```
