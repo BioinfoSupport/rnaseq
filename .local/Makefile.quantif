@@ -1,0 +1,45 @@
+
+NJOB ?= 3
+NCPU ?= 6
+GENOMEDIR ?= ./data/ref
+GENOME ?= Mm
+
+
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# BAM quantification with GTF annotations
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PHONY:%/HT2_QUANTIFY
+%/HT2_QUANTIFY:
+	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif/
+
+%.$(GENOME).ht2.bam.fc:%.$(GENOME).ht2.bam
+	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
+
+%/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
+	$(MAKE) -j$(NJOB) $(^:%.bam=%.bam.fc)
+	ht2fc_merge --out-dir '$@' $^
+
+
+
+
+
+# Stringtie commands to compute TPM
+.PRECIOUS:%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm
+
+%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm:SHELL=bash
+%.$(GENOME).ht2.tpm.gtf:$(GENOMEDIR)/$(GENOME)/genome.gtf.gz
+	zcat "$<" | awk '!/transcript_id ""/' > $@
+
+%.$(GENOME).ht2.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie -p$(NCPU) -A "$@" -eG "$(@:%.tpm=%.tpm.gtf)" "$<" > /dev/null
+%.$(GENOME).ht2.rf.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie --rf -p$(NCPU) -A "$@" -eG "$(@:%.rf.tpm=%.tpm.gtf)" "$<" > /dev/null
+%.$(GENOME).ht2.fr.tpm:%.$(GENOME).ht2.bam %.$(GENOME).ht2.tpm.gtf
+	stringtie --fr -p$(NCPU) -A "$@" -eG "$(@:%.fr.tpm=%.tpm.gtf)" "$<" > /dev/null
+
+
+
+
