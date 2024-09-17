@@ -20,8 +20,8 @@ $(GENOMEDIR)/ensembl-GRCh38-110/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWN
 $(GENOMEDIR)/ensembl-GRCm39-110/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/ensembl-GRCm39-110.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
 # Mixed
-$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/Dd+Mm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
-$(GENOMEDIR)/GRCh38+lm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/GRCh38+lm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/Dd+Mm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/Dd%2BMm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
+$(GENOMEDIR)/GRCh38+lm/genome.fasta:;curl -kL $(CURL_FLAGS) "$(REF_DOWNLOAD_URL)/GRCh38%2Blm.tar.gz" | tar -C $(GENOMEDIR)/ -zxf -
 
 # Unknown genome rule
 $(GENOMEDIR)/%/genome.fasta:;@echo "ERROR: No rule to make genome '$*' in directory '$(GENOMEDIR)'" && 1
