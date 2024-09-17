@@ -7,18 +7,18 @@
 library(optparse)
 
 option_list <- list( 
-	make_option("--out-prefix",help="Prefix for the generated output files <prefix>.bed.bgz <prefix>.bed.bgz.tbi [default: %default]",type="character",default = "output"),
+	make_option("--output",help="Name of the BigWig file to generate [default: %default]",type="character",default = "output.bw"),
 	make_option("--resize",help="Resize all reads to the given length [default: %default]",type="integer",default = 0),
 	make_option("--thread",help="Number of thread [default: %default]",type="integer",default = 4),
+	make_option("--strand",help="Which strand to quantify (+,-,*) [default: %default]",type="character",default = "*"),
 	make_option("--yield-size",help="Batch size (Number of read to load at each iteration, decrease to reduce memory footprint) [default: %default]",type="integer",default = 1000000)
 )
 opt <- parse_args(OptionParser(
 	option_list = option_list,
-	usage = "usage: %prog --out-prefix <prefix> <bam-file>",
-	description = "Extract stranded read coverage for each position of the given BAM file.
-	Generate a compressed and indexed BED file with read-coverage of all genomic positions."
+	usage = "usage: %prog --output <output.bw> <bam-file>",
+	description = "Extract (stranded) read coverage for each position of the given BAM file.
+	Generate a BigWig file with read-coverage at all genomic positions."
 	),positional_arguments = 1)
-if (is.null(opt$options$out)) stop("--out arguments is required")
 #opt <- list(args="data/fastq/test/sample1-1_100k.Mm.ht2.bam",options=list(out="cov.bed"))
 
 #-#-#-#-#-#-#-#-#-#-#-#-#
@@ -41,13 +41,16 @@ MAPFUN <- if (opt$options$resize>0) {
 	\(x) coverage(granges(x))	
 }
 
-fwd <- GenomicFiles::reduceByYield(bam,MAP = MAPFUN,
-	YIELD = \(x) readGAlignments(x,ScanBamParam(flag=scanBamFlag(isMinusStrand = FALSE)))
-) |> GRanges(strand="+")
-rev <- GenomicFiles::reduceByYield(bam,MAP = MAPFUN,
-	YIELD = \(x) readGAlignments(x,ScanBamParam(flag=scanBamFlag(isMinusStrand = TRUE)))
-) |> GRanges(strand="-")
-
-rtracklayer::export.bed(c(fwd,rev),paste0(opt$options$"out-prefix",".bed"),index=TRUE)
+BAMFLAG <- switch(
+	opt$options$strand,
+	"*" = scanBamFlag(isMinusStrand = NA),
+	"+" = scanBamFlag(isMinusStrand = FALSE),
+	"-" = scanBamFlag(isMinusStrand = TRUE)
+)
+	
+cov <- GenomicFiles::reduceByYield(bam,MAP = MAPFUN,
+	YIELD = \(x) readGAlignments(x,ScanBamParam(flag=BAMFLAG))
+) 
+rtracklayer::export.bw(cov,opt$options$output)
 
 
