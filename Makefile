@@ -19,8 +19,7 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:USAGE %/ALL %/CLEAN TEST
-
+.PHONY:USAGE
 USAGE:
 	@echo "usage: rnaseq <option> target"
 	@echo "options:" 
@@ -32,14 +31,14 @@ USAGE:
 	@echo "targets:"
 
 
-
-
+.PHONY:TESTS
 TESTS:
 	$(MAKE) GENOME=Mm data/fastq/test/RNASEQ
 	$(MAKE) GENOME=Dd+Mm data/fastq/test/RNASEQ
 	$(MAKE) GENOME=Dd data/fastq/test/RNASEQ
 	
 
+.PHONY:%/CLEAN
 %/CLEAN:
 	rm -rf $*/*.ht2.* $*/*.fastq.gz.* $*/*.html
 
