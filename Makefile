@@ -34,9 +34,9 @@ USAGE:
 
 .PHONY:TESTS
 TESTS:
-	$(MAKE) GENOME=Mm data/fastq/test/RNASEQ
-	$(MAKE) GENOME=Dd+Mm data/fastq/test/RNASEQ
-	$(MAKE) GENOME=Dd data/fastq/test/RNASEQ
+	$(MAKE) GENOME=Mm data/fastq/test/RNASEQ.ALL
+	$(MAKE) GENOME=Dd+Mm data/fastq/test/RNASEQ.ALL
+	$(MAKE) GENOME=Dd data/fastq/test/RNASEQ.ALL
 	
 
 .PHONY:%/CLEAN
