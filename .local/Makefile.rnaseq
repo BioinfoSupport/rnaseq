@@ -19,15 +19,15 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%/RNASEQ
-%/RNASEQ:INPUT_FQ = $(wildcard $*/*.fastq.gz)
-%/RNASEQ:%/
-	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.RNASEQ)
-	$(MAKE) -j$(NJOB) $*/HT2_QUANTIFY
+.PHONY:%/RNASEQ.ALL
+%/RNASEQ.ALL:INPUT_FQ = $(wildcard $*/*.fastq.gz)
+%/RNASEQ.ALL:%/
+	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.RNASEQ.ALL)
+	$(MAKE) -j$(NJOB) $*/HT2_QUANTIFY.ALL
 
-.PHONY:%.RNASEQ
-%.RNASEQ:%.fastq.gz
-	$(MAKE) -j$(NJOB) $<.ALL $*.HT2
+.PHONY:%.RNASEQ.ALL
+%.RNASEQ.ALL:%.fastq.gz
+	$(MAKE) -j$(NJOB) $<.ALL $*.HT2.ALL
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#

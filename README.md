@@ -85,7 +85,7 @@ singularity exec 'docker://unigebsp/ngs' make GENOME=Dd+Mm data/fastq/test/all
 
 - Use uppercase for .PHONY rules (e.g. %.fastq.gz.ALL, %.bam.ALL, %.BWAMEM, %.HT2)
 
-- 
+- Try to add .ALL prefix to .PHONY rules that are fast to compute
 
 
 

@@ -23,15 +23,15 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%/TNSEQ_SE
-%/TNSEQ_SE:INPUT_FQ = $(wildcard $*/*.fastq.gz)
-%/TNSEQ_SE:%/
-	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.TNSEQ_SE)
-	#$(MAKE) -j$(NJOB) $*/TNSEQ_QUANTIFY
+.PHONY:%/TNSEQ_SE.ALL
+%/TNSEQ_SE.ALL:INPUT_FQ = $(wildcard $*/*.fastq.gz)
+%/TNSEQ_SE.ALL:%/
+	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.TNSEQ_SE.ALL)
+	#$(MAKE) -j$(NJOB) $*/TNSEQ_QUANTIFY.ALL
 
-.PHONY:%.TNSEQ_SE
-%.TNSEQ_SE:%.fastq.gz
-	$(MAKE) -j$(NJOB) $<.ALL $*_umi_cutadapt.fastq.gz $*_umi_cutadapt.HT2 
+.PHONY:%.TNSEQ_SE.ALL
+%.TNSEQ_SE.ALL:%.fastq.gz
+	$(MAKE) -j$(NJOB) $<.ALL $*_umi_cutadapt.fastq.gz $*_umi_cutadapt.HT2.ALL
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#

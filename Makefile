@@ -1,19 +1,20 @@
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Parameters
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-NJOB = 3
-NCPU = 6
-GENOMEDIR = ./data/ref
-GENOME = Mm
-
-
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Set environment variables
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 MKDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 export LOCALDIR ?= $(MKDIR)/.local/
 export PATH := $(LOCALDIR)/bin/:$(PATH)
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Parameters
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+#include $(LOCALDIR)/config/Makefile.baobab
+NJOB = 3
+NCPU = 6
+GENOMEDIR = ./data/ref
+GENOME = Mm
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#

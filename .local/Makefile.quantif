@@ -11,14 +11,16 @@ GENOME ?= Mm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # BAM quantification with GTF annotations
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%/HT2_QUANTIFY
-%/HT2_QUANTIFY:
-	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif/
+.PHONY:%/HT2_QUANTIFY.ALL
+%/HT2_QUANTIFY.ALL:
+	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif/robj.rds
 
 %.$(GENOME).ht2.bam.fc:%.$(GENOME).ht2.bam
 	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
 
-%/$(GENOME).ht2.quantif/:%/*.$(GENOME).ht2.bam
+
+# WARNING: THIS RULE IS PROBLEMATIC TO RUN IN DIFFERENT SHELL
+%/$(GENOME).ht2.quantif/robj.rds:%/*.$(GENOME).ht2.bam
 	$(MAKE) -j$(NJOB) $(^:%.bam=%.bam.fc)
 	ht2fc_merge --out-dir '$@' $^
 

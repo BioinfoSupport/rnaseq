@@ -11,8 +11,8 @@ GENOME ?= Mm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # HISAT2 PAIRED-END RULES 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%.HT2
-%.HT2:%_R1.fastq.gz %_R2.fastq.gz
+.PHONY:%.HT2.ALL
+%.HT2.ALL:%_R1.fastq.gz %_R2.fastq.gz
 	$(MAKE) -j$(NJOB) $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.ALL
 
 .PRECIOUS:%.$(GENOME).ht2.bam
@@ -31,8 +31,8 @@ GENOME ?= Mm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # HISAT2 SINGLE-END RULES
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-.PHONY:%.HT2
-%.HT2:%.fastq.gz
+.PHONY:%.HT2.ALL
+%.HT2.ALL:%.fastq.gz
 	$(MAKE) -j$(NJOB) $*.$(GENOME).ht2.bam $*.$(GENOME).ht2.bam.ALL
 
 .PRECIOUS:%.$(GENOME).ht2.bam
