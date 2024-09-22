@@ -47,9 +47,9 @@ BAMFLAG <- switch(
 	"+" = scanBamFlag(isMinusStrand = FALSE),
 	"-" = scanBamFlag(isMinusStrand = TRUE)
 )
-	
+
 cov <- GenomicFiles::reduceByYield(bam,MAP = MAPFUN,
-	YIELD = \(x) readGAlignments(x,ScanBamParam(flag=BAMFLAG))
+	YIELD = \(x) readGAlignments(x,param = ScanBamParam(flag=BAMFLAG))
 ) 
 rtracklayer::export.bw(cov,opt$options$output)
 
