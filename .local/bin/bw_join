@@ -1,0 +1,69 @@
+#!/usr/bin/env Rscript
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Argument parsing
+#-#-#-#-#-#-#-#-#-#-#-#-#
+library(optparse)
+option_list <- list( 
+	make_option("--out",help="Name of a .rds file to generate that will contain the SummarizedExperiment object",type="character",default = "bwjoin.rds"),
+	make_option("--strand",help="Which strand to quantify (+,-,*) [default: %default]",type="character",default = "*")
+)
+opt <- parse_args(OptionParser(
+	usage = "usage: %prog --out <rds-file> file1.bw file2.bw ...",
+	description = "Merge multiple BigWig files into a R object SummarizedExperiment",
+	option_list = option_list
+),positional_arguments = c(1, Inf))
+if (is.null(opt$options$"out-dir")) stop("--out argument is required")
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Methods definitions
+#-#-#-#-#-#-#-#-#-#-#-#-#
+suppressPackageStartupMessages({
+	#BiocParallel::register(BiocParallel::SerialParam(progressbar = TRUE)) # Alternative running in non-parallel mode
+	BiocParallel::register(BiocParallel::MulticoreParam(workers=3,progressbar = TRUE))
+	library(SummarizedExperiment)
+})
+
+
+
+#' Load scores from a list of BED file into a SummarizedExperiment
+#' @param bwfl: character vector of paths to bigwig files
+read_multi_bw <- function(bwfl,strand="*") {
+	bwfl <- rtracklayer::BigWigFileList(bwfl)
+	names(bwfl) <- bwfl
+	
+	# Load content of all bed files into a GRangesList
+	gr <- bplapply(bwfl,rtracklayer::import.bw) |>
+		GRangesList() |>
+		stack()
+	strand(gr) <- strand
+	
+	# Identify disjoint regions
+	p <- disjoin(gr,with.revmap=TRUE)
+	
+	# Build count matrix from scores
+	n <- Matrix::sparseMatrix(
+		i = togroup(PartitioningByWidth(p$revmap)),
+		j = as.integer(gr$name[unlist(p$revmap)]),
+		x = gr$score[unlist(p$revmap)],
+		dimnames = list(NULL,levels(gr$name))
+	)
+	p$revmap <- NULL
+	
+	# Store everything in a SummerizedExperiment object
+	x <- SummarizedExperiment(list(counts=n),rowData = p)
+	x
+}
+
+x <- read_multi_bw(opt$args,opt$options$strand)
+saveRDS(x,file=opt$options$out)
+
+
+
+
+
+
+
