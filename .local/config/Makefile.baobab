@@ -1,23 +1,13 @@
 
 
 
-SLURM_CMD = srun 
-SLURM_CMD += --partition=shared-cpu
-SLURM_CMD += -n1 
-SLURM_CMD += --cpus-per-task=4
-SLURM_CMD += --time 2:00:00
-SLURM_CMD += --mem=16G
-SINGULARTY_SHELL = singularity exec 
-SINGULARTY_SHELL += --bind /scratch:/tmp 
-SINGULARTY_SHELL += --bind /acanas/m-BioinfoSupport 
-SINGULARTY_SHELL += /acanas/m-BioinfoSupport/singularity/ngs_latest.sif 
-SINGULARTY_SHELL += bash -c
+SLURM_CMD = srun --partition=shared-cpu -n1 --cpus-per-task=4 --time 2:00:00 --mem=16G
+SINGULARTY_SHELL = singularity exec --bind /scratch:/tmp --bind /acanas/m-BioinfoSupport /acanas/m-BioinfoSupport/singularity/ngs_latest.sif bash -c
 
 export SHELL := $(SLURM_CMD) $(SINGULARTY_SHELL)
 
 # PHONY rules with extension .ALL are run in the global bash
 %.ALL:SHELL=bash
-
 
 NJOB = 100
 NCPU = 4

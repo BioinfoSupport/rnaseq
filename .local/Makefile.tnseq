@@ -1,6 +1,13 @@
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Set environment variables
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+MKDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+export LOCALDIR := $(MKDIR)/
+export PATH := $(LOCALDIR)/bin/:$(PATH)
 
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Parameters
-
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 NJOB ?= 3
 NCPU ?= 6
 GENOMEDIR ?= ./data/ref
@@ -10,14 +17,6 @@ CUTADAPT_FLAGS += -e 0.05
 CUTADAPT_FLAGS += --front CGGGGACTTATCAGCCAACCTGT
 CUTADAPT_FLAGS += --minimum-length 25
 CUTADAPT_FLAGS += --maximum-length 85
-
-
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Set environment variables
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-MKDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-export LOCALDIR := $(MKDIR)/.local/
-export PATH := $(LOCALDIR)/bin/:$(PATH)
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
