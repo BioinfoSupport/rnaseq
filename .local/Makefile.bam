@@ -22,11 +22,11 @@ NCPU ?= 6
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # BAM coverage
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-%.bam.cov.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" "$<"
-%.bam.cov.fwd.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" --strand="+" "$<"
-%.bam.cov.rev.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" --strand="-" "$<"
+%.bam.cov.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" "$<"
+%.bam.cov.fwd.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" --strand="+" "$<"
+%.bam.cov.rev.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" --strand="-" "$<"
 
-%.bam.start.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" --resize=1 "$<"
-%.bam.start.fwd.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" --strand="+" --resize=1 "$<"
-%.bam.start.rev.bw:%.bam; bam2bw --thread=$(NCPU) --output="$@" --strand="-" --resize=1 "$<"
+%.bam.start.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" --resize=1 "$<"
+%.bam.start.fwd.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" --strand="+" --resize=1 "$<"
+%.bam.start.rev.bw:%.bam; bam_to_bw --thread=$(NCPU) --output="$@" --strand="-" --resize=1 "$<"
 
