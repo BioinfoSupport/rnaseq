@@ -9,7 +9,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 
 .PHONY:%.fastq.gz.ALL
 %.fastq.gz.ALL:%.fastq.gz
-	$(MAKE) -j$(NJOB) "$*_fastqc.html" "$<.fqchk"
+	$(MAKE) -j$(NJOB) "$*_fastqc.html"
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # FASTQC

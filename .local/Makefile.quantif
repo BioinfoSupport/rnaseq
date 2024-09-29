@@ -16,7 +16,7 @@ GENOME ?= Mm
 	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif/robj.rds
 
 %.$(GENOME).ht2.bam.fc:%.$(GENOME).ht2.bam
-	ht2fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
+	bam_to_fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
 
 # WARNING: THIS RULE IS PROBLEMATIC TO RUN IN DIFFERENT SHELL
 %/$(GENOME).ht2.quantif/robj.rds:%/*.$(GENOME).ht2.bam
