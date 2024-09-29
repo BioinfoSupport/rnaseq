@@ -93,7 +93,7 @@ read_fc <- function(bam_files,default_counts="genomicU") {
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 x <- read_fc(opt$args)
-colData(x) <- as(read_ht2_stat(sub(".bam$",".stat",opt$args)),"DataFrame")
+colData(x) <- cbind(colData(x),read_ht2_stat(sub(".bam$",".stat",opt$args)))
 saveRDS(x,file=opt$options$out)
 
 
