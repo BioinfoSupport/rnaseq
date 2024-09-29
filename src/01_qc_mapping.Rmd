@@ -3,7 +3,7 @@ title: "Mapping QC"
 output: html_document
 date: "2023-08-03"
 params:
-  quantif_rds: "data/fastq/test/Mm.ht2.quantif/robj.rds"
+  quantif_rds: "data/fastq/test/Mm.ht2.quantif.rds"
   genome_dir: "data/ref/Mm"
   outdir: "./"
 ---
