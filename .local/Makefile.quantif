@@ -13,15 +13,15 @@ GENOME ?= Mm
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY:%/HT2_QUANTIFY.ALL
 %/HT2_QUANTIFY.ALL:
-	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif/robj.rds
+	$(MAKE) -j$(NJOB) $*/$(GENOME).ht2.quantif.rds
 
 %.$(GENOME).ht2.bam.fc:%.$(GENOME).ht2.bam
 	bam_to_fc --gtf '$(GENOMEDIR)/$(GENOME)/genome.gtf.gz' --out "$@" "$<"
 
 # WARNING: THIS RULE IS PROBLEMATIC TO RUN IN DIFFERENT SHELL
-%/$(GENOME).ht2.quantif/robj.rds:%/*.$(GENOME).ht2.bam
+%/$(GENOME).ht2.quantif.rds:%/*.$(GENOME).ht2.bam
 	$(MAKE) -j$(NJOB) $(^:%.bam=%.bam.fc)
-	ht2fc_join --out-dir '$@' $^
+	fc_join --out '$@' $^
 
 
 
