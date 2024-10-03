@@ -6,7 +6,7 @@ NCPU ?= 6
 
 .PHONY:%.bam.ALL
 %.bam.ALL:%.bam
-	$(MAKE) -j$(NJOB) "$<.bai" "$<.flagstat"
+	$(MAKE) -j$(NJOB) "$<.bai" "$<.flagstat" "$<.cov.fwd.bw" "$<.cov.rev.bw"
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#
