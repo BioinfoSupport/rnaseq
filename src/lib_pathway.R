@@ -62,13 +62,13 @@ ggenrichdot <- function(enrich,overlap_label=FALSE,max_padj=0.05,y_glue="{pathwa
 	  ungroup() |>
 	  mutate(x = as.factor(str_glue(x_glue))) |>
 	  mutate(y = as.factor(str_glue(y_glue))) |>
-		mutate(y = reorder(y,pval,min)) |>
+		mutate(y = fct_reorder(y,pval,min)) |>
 		ggplot(aes(y = y,x = x)) +
   		geom_point(aes(size=2*pi*(sqrt(overlap_size/pathway_size/2/pi) + 0.1)^2),color="black",data=~filter(.,padj<=max_padj)) +
   	  geom_point(aes(size=2*pi*(sqrt(overlap_size/pathway_size/2/pi) + 0.1)^2),color="grey",data=~filter(.,padj>max_padj)) +
-  		geom_point(aes(size=overlap_size/pathway_size,color=pmin(-log10(padj),10))) +
-  		scale_size_area(labels=scales::percent) + 
-  		scale_color_gradient(low="#EFD500",high="#0094CD",limits=c(0,6)) +
+  		geom_point(aes(size=overlap_size/pathway_size,color=-log10(padj))) +
+  		scale_size_area(labels=scales::percent,limits=c(0,1),oob=scales::squish) + 
+  		scale_color_gradient(low="#EFD500",high="#0094CD",limits=c(0,6),oob=scales::squish) +
   		labs(size="% set",color=expression(-log[10](padj)))
 	if (overlap_label) {
 	  p <- p + geom_text(aes(label=overlap_size),color="grey",size=3,hjust=0,position=position_nudge(x=0.2),data=~filter(.,overlap_size>0))
