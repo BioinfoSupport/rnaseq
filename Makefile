@@ -11,7 +11,6 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 # Parameters
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 #include $(LOCALDIR)/config/Makefile.baobab
-NJOB = 3
 NCPU = 6
 GENOMEDIR = ./data/ref
 GENOME = Mm
@@ -28,8 +27,9 @@ USAGE:
 	@echo "    -j <int>          Parallel execution on <int> jobs"
 	@echo "    -n                Dry run: don't run anything, just show commands"
 	@echo "    GENOMEDIR='path'  Directory containing the reference genomes [$(GENOMEDIR)]"
-	@echo "    GENOME='path'     Default reference genome [$(GENOME)]"
-	@echo "targets:"
+	@echo "    GENOME='path'     Reference genome to use [$(GENOME)]"
+	@echo "examples:"
+	@echo "    make GENOME=Mm"
 
 
 .PHONY:TESTS
@@ -47,8 +47,8 @@ TESTS:
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
-include $(LOCALDIR)/Makefile.rnaseq
-#include $(LOCALDIR)/Makefile.tnseq
+#include $(LOCALDIR)/Makefile.rnaseq
+include $(LOCALDIR)/Makefile.tnseq
 
 
 

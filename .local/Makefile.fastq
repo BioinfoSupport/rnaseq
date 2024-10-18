@@ -1,5 +1,4 @@
 
-NJOB ?= 3
 NCPU ?= 6
 CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 # TruSeq adapter sequence read1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
@@ -9,7 +8,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 
 .PHONY:%.fastq.gz.ALL
 %.fastq.gz.ALL:%.fastq.gz
-	$(MAKE) -j$(NJOB) "$*_fastqc.html"
+	$(MAKE) "$*_fastqc.html"
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # FASTQC
@@ -40,7 +39,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 
 # Add READ2 sequence (=UMI sequence) to FASTQ header line (for UMI-tools)
 %_umi.fastq.gz:%_R1.fastq.gz %_R2.fastq.gz
-	seqtk mergepe $^ | awk -f umi2hdr | pigz > $@
+	seqtk mergepe $^ | fq_r2_to_r1_hdr | pigz > $@
 
 
 

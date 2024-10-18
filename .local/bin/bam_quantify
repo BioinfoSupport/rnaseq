@@ -1,0 +1,177 @@
+#!/usr/bin/env Rscript
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Argument parsing
+#-#-#-#-#-#-#-#-#-#-#-#-#
+library(optparse)
+option_list <- list( 
+	make_option("--gtf",help="Path to the GTF file [required]. The GTF must contains 'gene', 'exon' and 'CDS' features, with 'gene_id' properly set on each.",type="character"),
+	make_option("--out",help="Name of the RDS file to generate [default: %default]",type="character",default="out.fc"),
+	make_option("--include-secondary",help="By default, feature counting exclude reads with secondary alignment flag set in the BAM. If this option is set, they are also included in the counting.",action="store_true",default = FALSE),
+	make_option("--count-within-only",help="By default count all overlaping reads for a feature, if set count only reads falling within the features",action="store_true",default = FALSE),
+	make_option("--yield-size",help="Batch size (Number of read to load at each iteration, decrease to reduce memory footprint) [default: %default]",type="integer",default = 5000000),
+	make_option("--thread",help="Number of thread [default: %default]",type="integer",default = 4)
+)
+opt <- parse_args(OptionParser(
+	option_list = option_list,
+	usage = "usage: %prog --out <out.fc> --gtf <in.gtf> <bam-file> ...",
+	description = "Perform feature counting on a given BAM file for a given GTF annotation."
+	),positional_arguments = c(1,Inf))
+if (is.null(opt$options$gtf)) stop("--gtf arguments is required")
+if (!file.exists(opt$options$gtf)) stop("cannot find --gtf file")
+
+#opt <- list(args=list.files("data/fastq/test/",".Mm.ht2.bam$",full.name=TRUE),options=list(gtf="data/ref/Mm/genome.gtf.gz","include-secondary"=FALSE,"count-within-only"=FALSE,"yield-size"=5e6,thread=4))
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#
+# Methods definitions
+#-#-#-#-#-#-#-#-#-#-#-#-#
+suppressPackageStartupMessages({
+	BiocParallel::register(BiocParallel::MulticoreParam(workers = opt$options$thread,progressbar = TRUE))
+	library(GenomicAlignments)
+	library(GenomicFeatures)
+	library(tidyverse)
+})
+
+
+
+
+#' Extract chromosome-wide features to quantify from a GTF.
+#' 
+#' @param gtf a GRanges with meta-columns `type`, and seqinfo correctly set
+#' @param exon_type a character of feature types to consider as exonic
+#' @param gene_types a character of feature types to consider as genomic
+#' @return a GRangesList
+chrom_features <- function(gtf,exon_types=c("exon","CDS"),gene_types="gene") {
+	stopifnot("`type` field not found in GTF" = "type" %in% names(mcols(gtf)))
+
+	# This is a List of GRangesList
+	features <- List(
+		chrom_chromosomicU = GRanges(seqinfo(gtf)) %>% splitAsList(.,seqnames(.)),
+		
+		chrom_genomicU = gtf[gtf$type %in% gene_types] %>%
+			unstrand() %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_genomicS = gtf[gtf$type %in% gene_types] %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_genomicA = gtf[gtf$type %in% gene_types] %>%
+			invertStrand() %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		
+		chrom_exonicU = gtf[gtf$type %in% exon_types] %>%
+			unstrand() %>% 
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_exonicS = gtf[gtf$type %in% exon_types] %>%
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce(),
+		chrom_exonicA = gtf[gtf$type %in% exon_types] %>%
+			invertStrand() %>% 
+			splitAsList(.,seqnames(.)) %>%
+			GenomicRanges::reduce()
+	) %>%
+	unlist(recursive=FALSE)
+}
+
+
+
+#' Extract genes features to quantify from a GTF.
+#' 
+#' @param gtf a GRanges with meta-columns `type` and `gene_id`, and seqinfo correctly set
+#' @param exon_type a character of feature types to consider as exonic
+#' @param gene_types a character of feature types to consider as genomic
+gene_features <- function(gtf,exon_types=c("exon","CDS"),gene_types="gene") {
+	stopifnot("`gene_id` field not found in GTF" = "gene_id" %in% names(mcols(gtf)))
+	stopifnot("`type` field not found in GTF" = "type" %in% names(mcols(gtf)))
+	
+	# This is a List of GRangesList
+	features <- List(
+		gene_genomicU = gtf[gtf$type %in% gene_types] %>%
+			unstrand() %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce(),
+		gene_genomicS = gtf[gtf$type %in% gene_types] %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce(),
+		gene_genomicA = gtf[gtf$type %in% gene_types] %>%
+			invertStrand() %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce(),
+		
+		gene_exonicU = gtf[gtf$type %in% exon_types] %>%
+			unstrand() %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce(),
+		gene_exonicS = gtf[gtf$type %in% exon_types] %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce(),
+		gene_exonicA = gtf[gtf$type %in% exon_types] %>%
+			invertStrand() %>%
+			splitAsList(.,.$gene_id) %>%
+			GenomicRanges::reduce()
+	) %>%
+	unlist(recursive=FALSE)
+}
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Main
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+bfl <- BamFileList(opt$args,yieldSize = opt$options$"yield-size",asMates = FALSE)
+suppressWarnings(
+	gtf <- rtracklayer::import.gff2(opt$options$gtf,colnames=c("type","gene_id"),genome=seqinfo(bfl))
+)
+
+# Count reads in all features
+x <- summarizeOverlaps(
+	features = c(chrom_features(gtf),gene_features(gtf)),
+	reads = bfl,
+	mode = if (opt$options$"count-within-only") IntersectionStrict else Union,
+	inter.feature = FALSE, # Count number of read overlapping the feature
+	ignore.strand = FALSE,
+	param = ScanBamParam(flag=scanBamFlag(isUnmappedQuery=FALSE,isSecondaryAlignment = if (opt$options$"include-secondary") NA else FALSE))
+)
+
+pat <- "^([^_]*)_([^\\.]*)\\.(.*)$"
+mcols(x)$feature_type <- sub(pat,"\\1",rownames(x))
+mcols(x)$count_type <- sub(pat,"\\2",rownames(x))
+mcols(x)$feature_id <- sub(pat,"\\3",rownames(x))
+rownames(x) <- mcols(x)$feature_id
+
+x <- split(x,mcols(x)$feature_type)
+
+chrom <- local({
+	A <- split(x$chrom,mcols(x$chrom)$count_type)
+	chrom <- A$chromosomicU
+	stopifnot(all(lengths(rowRanges(chrom))==1))
+	rowRanges(chrom) <- unlist(rowRanges(chrom),recursive = FALSE,use.names = FALSE)
+	mcols(chrom) <- mcols(A$chromosomicU)
+	rownames(chrom) <- rownames(A$chromosomicU)
+	assays(chrom) <- c(assays(chrom),lapply(A,assay,"counts"))
+	chrom
+})
+
+gene <- local({
+	A <- split(x$gene,mcols(x$gene)$count_type)
+	gene <- A$genomicU
+	stopifnot(all(lengths(rowRanges(gene))==1))
+	rowRanges(gene) <- unlist(rowRanges(gene),recursive = FALSE,use.names = FALSE)
+	mcols(gene) <- mcols(A$genomicU)
+	rownames(gene) <- rownames(A$genomicU)
+	assays(gene) <- c(assays(gene),lapply(A,assay,"counts"))
+	gene
+})
+
+
+#mcols(x)$feature_biotype
+saveRDS(x,file = opt$options$out)
+
+
+

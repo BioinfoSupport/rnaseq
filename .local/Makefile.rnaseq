@@ -8,7 +8,6 @@ export PATH := $(LOCALDIR)/bin/:$(PATH)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Parameters
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-NJOB ?= 3
 NCPU ?= 6
 GENOMEDIR ?= ./data/ref
 GENOME ?= Mm
@@ -19,12 +18,12 @@ GENOME ?= Mm
 .PHONY:%/RNASEQ.ALL
 %/RNASEQ.ALL:INPUT_FQ = $(wildcard $*/*.fastq.gz)
 %/RNASEQ.ALL:%/
-	$(MAKE) -j$(NJOB) $(INPUT_FQ:%.fastq.gz=%.RNASEQ.ALL)
-	$(MAKE) -j$(NJOB) $*/HT2_QUANTIFY.ALL
+	$(MAKE) $(INPUT_FQ:%.fastq.gz=%.RNASEQ.ALL)
+	$(MAKE) $*/HT2_QUANTIFY.ALL
 
 .PHONY:%.RNASEQ.ALL
 %.RNASEQ.ALL:%.fastq.gz
-	$(MAKE) -j$(NJOB) $<.ALL $*.HT2.ALL
+	$(MAKE) $<.ALL $*.HT2.ALL
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#

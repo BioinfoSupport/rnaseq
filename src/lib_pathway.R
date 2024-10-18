@@ -5,10 +5,13 @@ library(patchwork)
 
 
 
-
-#' require cond, ensembl_id , dir (a partition of the genes in cond)
-#' A: a 2 column annotation table with ensembl_id,pathway_id
-#' P: pathways metadata with: pathway_id,pathway_name
+#' Perform multiple genes enrichment analyses
+#' 
+#' @param enrich a data.frame with 3 columns cond, ensembl_id, dir. 
+#'   For each tested condition (cond), all the genes of the universe must appear 
+#'   and are partitioned according to dir.
+#' @param A a 2 column data.frame with genes annotations (must contain columns `ensembl_id` and `pathway_id`)
+#' @param P a data.frame of pathways descriptions with: pathway_id,pathway_name
 enrichment_analysis <- function(res,A,P,min_pathway_size=5,min_overlap_size=2) {
 	
 	# Compute universe sizes for each condition
@@ -29,6 +32,7 @@ enrichment_analysis <- function(res,A,P,min_pathway_size=5,min_overlap_size=2) {
 		group_by(cond,pathway_id) |>
 		summarize(pathway_size=n_distinct(ensembl_id))
 	
+	# Compute overlaps between pathways and each condition
 	overlaps <- select(res,cond,dir,ensembl_id) |>
 		inner_join(A,by="ensembl_id",relationship="many-to-many") |>
 		group_by(cond,dir,pathway_id) |>

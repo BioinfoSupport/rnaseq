@@ -1,5 +1,4 @@
 
-NJOB ?= 3
 NCPU ?= 6
 GENOMEDIR ?= ./data/ref
 GENOME ?= Mm
@@ -13,7 +12,7 @@ BWAMEM_FLAGS ?=
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY: %.BWAMEM.ALL
 %.BWAMEM.ALL:%_R1.fastq.gz %_R2.fastq.gz
-	$(MAKE) -j$(NJOB) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
+	$(MAKE) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
 
 .PRECIOUS:%.$(GENOME).bwamem.bam
 %.$(GENOME).bwamem.bam:%_R1.fastq.gz %_R2.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta
@@ -28,7 +27,7 @@ BWAMEM_FLAGS ?=
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PHONY: %.BWAMEM.ALL
 %.BWAMEM.ALL:%.fastq.gz
-	$(MAKE) -j$(NJOB) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
+	$(MAKE) $*.$(GENOME).bwamem.bam $*.$(GENOME).bwamem.bam.ALL
 
 .PRECIOUS:%.$(GENOME).bwamem.bam
 %.$(GENOME).bwamem.bam:%.fastq.gz $(GENOMEDIR)/$(GENOME)/genome.fasta

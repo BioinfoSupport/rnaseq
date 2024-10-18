@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env -S awk -f
 
 ###################################################################################################################
 # Take as input a FASTQ file with interleaved read-pairs.
