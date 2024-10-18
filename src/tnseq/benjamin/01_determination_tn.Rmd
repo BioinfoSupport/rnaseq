@@ -7,6 +7,8 @@ params:
   data_dir: "data/fastq/fastq"
 ---
 
+Use this notebook to 
+
 ```{r echo=FALSE, message=FALSE}
 library(ShortRead)
 library(reshape2)
@@ -18,7 +20,7 @@ library(tidyverse)
 
 ### Consensus plot and table to determine transposon sequences {.tabset}
 
-```{r Consensus graph and seq to determine transposon, echo=FALSE}
+```{r, echo=FALSE}
 fastqgz <- list.files(path = params$data_dir, pattern = "*_R1_001.fastq.gz", full.names = TRUE, recursive = TRUE)
 
 list_f <- list()

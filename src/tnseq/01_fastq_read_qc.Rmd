@@ -1,0 +1,18 @@
+---
+title: "FASTQ quality control"
+output: html_document
+params:
+  genome_dir: "data/ref/Mm"
+  data_dir: "data/fastq/fastq"
+---
+
+This notebook display statistics FASTQ files extracted from `.fqchk` files.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+```
+
+

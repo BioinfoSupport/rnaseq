@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#
 library(optparse)
 option_list <- list( 
-	make_option("--gtf",help="Path to the GTF file [required]. The GTF must contains 'gene', 'exon' and 'CDS' features, with 'gene_id' properly set on each.",type="character"),
+	make_option("--gtf",help="[required] Path to the GTF file. The GTF must contains 'gene', 'exon' and 'CDS' features, with 'gene_id' properly set on each.",type="character"),
 	make_option("--out",help="Name of the txt file to generate [default: %default]",type="character",default="out.fc"),
 	make_option("--include-secondary",help="By default, feature counting exclude reads with secondary alignment flag set in the BAM. If this option is set, they are also included in the counting.",action="store_true",default = FALSE),
 	make_option("--count-within-only",help="By default count all overlaping reads for a feature, if set count only reads falling within the features",action="store_true",default = FALSE),
@@ -139,6 +139,7 @@ x <- summarizeOverlaps(
 )
 
 
+# Export counts
 pat <- "^([^_]*)_([^\\.]*)\\.(.*)$"
 n <- tibble(
 		feature = rownames(x),
