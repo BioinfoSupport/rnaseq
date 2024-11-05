@@ -1,0 +1,87 @@
+---
+title: "Sequencing Quality Control"
+output: html_document
+params:
+  fqchk_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
+---
+
+The `.fastq.gz` files you receive from the genomic platform contains the sequenced reads. The analysis pipeline generate for each of them a file called `.fastq.gz.fqchk` containing summary statistics of all the reads. This notebook aggregate these statistics for multiple `.fqchk` files and display their content so we can have an overview of the quality of the sequencing for a whole project.
+
+This notebook take as input a working directory, and load the content of all files with extension `.fqchk`.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+library(ggplot2)
+library(tidyverse)
+
+read_fqchk <- function(f) {
+	read_tsv(f,skip = 1)
+}
+```
+
+
+```{r}
+# Load content of all fqchk files in the given folder
+fqchk <- list.files(params$fqchk_dir,".fqchk$",full.names = TRUE) |>
+	enframe(value = "path",name = NULL) |>
+	mutate(content = map(path,read_fqchk)) |> 
+	mutate(path = fct(path)) |>
+	unnest(content) |>
+	mutate(lib = fct_relabel(path,~str_replace(basename(.),"(_umi)?.fastq.gz.fqchk$","")))
+```
+
+
+# Read size distribution
+```{r}
+fqchk  |>
+	filter(POS != "ALL") |>
+	mutate(POS = as.integer(POS)) |>
+	ggplot(aes(x=POS,y=`#bases`,group=lib)) + 
+	geom_line() + xlab("Cycle") + 
+	expand_limits(y=0) + 
+	scale_y_continuous(labels=scales::label_number(scale_cut=scales::cut_short_scale()))
+```
+
+
+# Sequencing Quality
+
+```{r}
+fqchk |>
+	filter(POS != "ALL") |>
+	mutate(POS = as.integer(POS)) |>
+	ggplot(aes(x=POS,y=avgQ,group=lib)) + 
+		geom_line() + xlab("Cycle") + 
+		expand_limits(y=0) + ylab("Average quality score")
+```
+
+
+
+# Base-pair composition
+
+```{r fig.height=20, fig.width=15}
+fqchk |>
+	filter(POS != "ALL") |>
+	mutate(POS = as.integer(POS)) |>
+	select(lib,POS,"%A","%C","%G","%T","%N") |>
+	pivot_longer(c("%A","%C","%G","%T","%N"),names_to = "bp") |>
+	mutate(bp = str_replace(bp,"%","")) |>
+	ggplot(aes(x=POS,y=value,fill=bp)) + 
+		facet_wrap(~lib,ncol = 1) +
+		geom_col() +
+		geom_text(aes(label=bp),position = position_stack(vjust=0.5),size=3) + 
+		xlab("Cycle") + 
+		expand_limits(y=0) + theme(legend.position = "top") + ylab("%")
+```
+
+
+
+
+
+
+
+
