@@ -2,7 +2,7 @@
 title: "Cutadapt Quality Control"
 output: html_document
 params:
-  fqchk_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
+  cutadapt_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
 ---
 
 The `.fastq.gz` files you receive from the genomic platform contains the sequenced reads.
@@ -28,56 +28,27 @@ read_cutadapt_json <- function(f) {
 
 
 ```{r}
-# Load content of all fqchk files in the given folder
-x <- list.files(params$fqchk_dir,"_cutadapt.json",full.names = TRUE) |>
+# Load content of all _cutadapt.json files in the given folder
+x <- list.files(params$cutadapt_dir,"_cutadapt.json",full.names = TRUE) |>
 	enframe(value = "path",name = NULL) |>
 	mutate(content = map(path,read_cutadapt_json)) |> 
 	mutate(path = fct(path)) |>
-	unnest(content) |>
-	mutate(lib = fct_relabel(path,~str_replace(basename(.),"(_umi)?.fastq.gz.fqchk$","")))
+	mutate(lib = fct_relabel(path,~str_replace(basename(.),"(_umi)?_cutadapt.json$","")))
 ```
 
 
 # Read size distribution
-```{r}
-fqchk  |>
-	filter(POS != "ALL") |>
-	mutate(POS = as.integer(POS)) |>
-	ggplot(aes(x=POS,y=`#bases`,group=lib)) + 
-	geom_line() + xlab("Cycle") + 
-	expand_limits(y=0) + 
-	scale_y_continuous(labels=scales::label_number(scale_cut=scales::cut_short_scale()))
-```
-
-
-# Sequencing Quality
-
-```{r}
-fqchk |>
-	filter(POS != "ALL") |>
-	mutate(POS = as.integer(POS)) |>
-	ggplot(aes(x=POS,y=avgQ,group=lib)) + 
-		geom_line() + xlab("Cycle") + 
-		expand_limits(y=0) + ylab("Average quality score")
-```
-
-
-
-# Base-pair composition
-
-```{r fig.height=20, fig.width=15}
-fqchk |>
-	filter(POS != "ALL") |>
-	mutate(POS = as.integer(POS)) |>
-	select(lib,POS,"%A","%C","%G","%T","%N") |>
-	pivot_longer(c("%A","%C","%G","%T","%N"),names_to = "bp") |>
-	mutate(bp = str_replace(bp,"%","")) |>
-	ggplot(aes(x=POS,y=value,fill=bp)) + 
-		facet_wrap(~lib,ncol = 1) +
-		geom_col() +
-		geom_text(aes(label=bp),position = position_stack(vjust=0.5),size=3) + 
-		xlab("Cycle") + 
-		expand_limits(y=0) + theme(legend.position = "top") + ylab("%")
+```{r fig.height=15, fig.width=5}
+x |>
+	mutate(content = map(x$content,~.x$adapters_read1$five_prime_end$trimmed_lengths[[1]])) |>
+	unnest(content) |>
+	unnest_longer(counts,indices_to = "err") |>
+	mutate(err = factor(err - 1L)) |>
+	ggplot(aes(x=len,y=counts,fill=err)) + 
+		facet_grid(lib~.) +
+		scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+		geom_col() + 
+		theme(legend.position="top",strip.text.y = element_text(angle=0))
 ```
 
 
