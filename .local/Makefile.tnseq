@@ -25,10 +25,10 @@ CUTADAPT_FLAGS += --maximum-length 85
 %/TNSEQ.ALL:INPUT_FQ = $(wildcard $*/*_R2.fastq.gz)
 %/TNSEQ.ALL:%/ 
 	$(MAKE) $(INPUT_FQ:%_R2.fastq.gz=%_umi.fastq.gz) $(INPUT_FQ:%_R2.fastq.gz=%_umi.TNSEQ.ALL)
-	#$(MAKE) $*/TNSEQ_QUANTIFY.ALL
 
 .PHONY:%.TNSEQ.ALL
-%.TNSEQ.ALL:%.fastq.gz %.fastq.gz.ALL %_cutadapt.fastq.gz %_cutadapt.HT2.ALL; @echo "DONE: $@"
+%.TNSEQ.ALL:%.fastq.gz 
+	$(MAKE) $*.fastq.gz.ALL $*_cutadapt.fastq.gz $*_cutadapt.fastq.gz.fqchk $*_cutadapt.HT2.ALL $*_cutadapt.$(GENOME).ht2.bam.start.fwd.bw $*_cutadapt.$(GENOME).ht2.bam.start.rev.bw
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules

@@ -69,6 +69,9 @@ docker compose exec rnaseq bash
 # Stop the container
 docker compose down
 
+# Run container at the commandline without compose 
+docker run --rm -v ./:/cwd --workdir /cwd unigebsp/ngs make -n
+
 # Download fastq from ige3 plateform to data/fastq
 wget -P ./data/fastq --content-disposition --trust-server-names -i 'https://data.ige3.genomics.unige.ch/dataset/download/xxxxxxx.txt'
 ```

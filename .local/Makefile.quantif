@@ -25,8 +25,9 @@ GENOME ?= Mm
 
 
 
-
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Stringtie commands to compute TPM
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 .PRECIOUS:%.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm
 
 %.$(GENOME).ht2.tpm %.$(GENOME).ht2.rf.tpm %.$(GENOME).ht2.fr.tpm:SHELL=bash
