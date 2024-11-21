@@ -1,0 +1,47 @@
+---
+title: "Tn insertions"
+output: html_document
+params:
+  genome_dir: "data/ref/Mm"
+  input_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+library(Rsamtools)
+library(rtracklayer)
+library(ggplot2)
+library(tidyverse)
+```
+
+
+```{r}
+fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
+gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa))
+```
+
+
+```{r}
+bw <- list.files(params$input_dir,".start.(fwd|rev).bw$",full.names = TRUE) |>
+	enframe(value = "path",name = NULL) |>
+	mutate(path = fct(path)) |>
+	mutate(lib = fct_relabel(path,~str_replace(basename(.),"(_umi)?_cutadapt.*$",""))) |>
+	mutate(strand=str_extract(path,".start.(fwd|rev).bw",1))
+```
+
+```{r}
+bw$path
+```
+
+
+
+
+
+
+

@@ -21,6 +21,8 @@ CUTADAPT_FLAGS += --maximum-length 85
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Main
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+.PRECIOUS:%_cutadapt.fastq.gz %_umi.fastq.gz
+
 .PHONY:%/TNSEQ.ALL
 %/TNSEQ.ALL:INPUT_FQ = $(wildcard $*/*_R2.fastq.gz)
 %/TNSEQ.ALL:%/ 
