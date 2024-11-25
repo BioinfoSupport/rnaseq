@@ -13,7 +13,7 @@ CUTADAPT_FLAGS ?= --adapter=AGATCGGAAGAGC --poly-a
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # FASTQC
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-%.fastq.gz.fastqc.html:%.fastq.gz; fastqc --threads $(NCPU) '$<' && rm -f "$*_fastqc.zip"
+%.fastq.gz.fastqc.html:%.fastq.gz; fastqc --threads $(NCPU) '$<' && mv "$*_fastqc.html" "$@" && rm -f "$*_fastqc.zip"
 %.fastq.gz.fqchk:%.fastq.gz; seqtk fqchk -q0 "$<" > "$@"
 
 
