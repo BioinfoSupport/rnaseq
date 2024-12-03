@@ -3,7 +3,7 @@ title: "Tn insertions"
 output: html_document
 params:
   genome_dir: "data/ref/Mm"
-  input_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
+  input_dir: "data/fastq/soldati/tnseq/2023_Foulon_Tnseq"
 ---
 
 
@@ -15,33 +15,182 @@ knitr::opts_chunk$set(
 	echo = FALSE
 )
 library(Rsamtools)
+library(SummarizedExperiment)
 library(rtracklayer)
 library(ggplot2)
 library(tidyverse)
+BiocParallel::register(BiocParallel::MulticoreParam(workers=5L,progressbar = TRUE))
+
+#' Read a bigwig file as a 0-width GRanges of insertions sites
+#' @param bw_path path to a bgwig file
+#' @param strand genomic strand
+#' @return a GRange of inserted sites
+read_bw <- function(bw_path,strand) {
+		x <- rtracklayer::import.bw(bw_path)
+		x <- x[x$score!=0]
+		GPos(x,score=rep(x$score,width(x)),strand=strand) |>
+			GRanges() |>
+			resize(0L)
+}
 ```
 
 
+# Load genome
 ```{r}
 fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
-gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa))
+gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa),feature.type="gene")
 ```
 
 
+
+# Load bigwig files in long format
 ```{r}
 bw <- list.files(params$input_dir,".start.(fwd|rev).bw$",full.names = TRUE) |>
 	enframe(value = "path",name = NULL) |>
-	mutate(path = fct(path)) |>
 	mutate(lib = fct_relabel(path,~str_replace(basename(.),"(_umi)?_cutadapt.*$",""))) |>
-	mutate(strand=str_extract(path,".start.(fwd|rev).bw",1))
+	mutate(strand = str_extract(path,".start.(fwd|rev).bw",1)) 
+
+# Check both strands are available for all libraries
+bw |>
+	pivot_wider(id_cols = "lib",names_from = "strand",values_from = "path") |>
+	filter(is.na(fwd) | is.na(rev)) |>
+	tally() |>
+	with(stopifnot("Not all bigwig files are paired fwd/rev"=n==0))
+	
+bw <- bw |>
+	mutate(strand = case_match(strand,"fwd"~"+","rev"~"-",.default="*")) |>
+	mutate(content = BiocParallel::bpmapply(read_bw,path,strand)) |>
+	pull(content,name = lib) |>
+	GRangesList() |>
+	stack("lib")
 ```
 
+
+
+
+# Insertion motif
 ```{r}
-bw$path
+bw$dinuc <- getSeq(fa,resize(bw,2L))
+as.data.frame(bw) |>
+	as_tibble() |>
+	group_by(lib,dinuc) |>
+	summarize(n=sum(score)) |>
+	group_by(lib) |>
+	mutate(pct=n/sum(n)) |>
+	mutate(dinuc = fct_reorder(dinuc,-n)) |>
+	ggplot(aes(color=lib,y=pct,x=dinuc,group=lib)) + 
+		geom_point() + 
+		geom_line() + 
+		scale_y_continuous(label=scales::percent) + 
+		ylab("Percentage of read") +
+		xlab("di-nucleotide at insertion site") +
+		ggtitle("")
+```
+
+# Convert long format to SummarizedExperiment wide format
+```{r}
+bw_pivot_wider <- function(bw) {
+	x <- unique(unstrand(resize(granges(bw),2L)))
+	
+	fwd <- resize(bw[strand(bw)=="+"],2L)
+	fwd <- Matrix::sparseMatrix(
+		i = findOverlaps(fwd,x,type = "equal",select = "first"),
+		j = fwd$lib,
+		x = fwd$score,
+		dimnames = list(NULL,levels(fwd$lib)),
+		dims = c(length(x),nlevels(fwd$lib))
+	)
+	
+	rev <- resize(bw[strand(bw)=="-"],2L)
+	rev <- Matrix::sparseMatrix(
+		i = findOverlaps(rev,x,type = "equal",select = "first"),
+		j = rev$lib,
+		x = rev$score,
+		dimnames = list(NULL,levels(rev$lib)),
+		dims = c(length(x),nlevels(rev$lib))
+	)
+	
+	x <- SummarizedExperiment(
+		list(fwd=fwd,rev=rev),
+		rowRanges = x
+	) |>
+		sort()
+	return(x)
+}
+x <- bw_pivot_wider(bw)
 ```
 
 
 
+# From wide format, extract counts at all TA sites
+```{r}
+ta_sites <- function(x,fa) {
+	ta <- vmatchPattern("TA",getSeq(fa)) |>
+		GRanges()
+	seqlevels(ta) <- str_replace(seqlevels(ta)," .*","")
+	i <- findOverlaps(ta,x,type = "equal",select = "first") |>
+		replace_na(0L)
+	ta <- SummarizedExperiment(
+		list(
+			fwd = rbind(0,assay(x,"fwd"))[i+1L,],
+			rev = rbind(0,assay(x,"rev"))[i+1L,]
+		),
+		rowRanges = ta,colData = colData(x)
+	)
+}
+ta <- ta_sites(x,fa)
+```
 
+# Normalize
+```{r}
+assay(ta,"counts") <- pmin(assay(ta,"fwd"),assay(ta,"rev"))
+ta$norm_factor <- 1e6 / colSums(assay(ta,"counts"))
+assay(ta,"norm") <- scale(assay(ta,"counts"),center = FALSE,scale = 1/ta$norm_factor)
+```
+
+
+
+# Stats by gene
+```{r}
+per_gene_stats <- function(ta,gtf) {
+	h <- findOverlaps(ta,gtf,type = "within")
+	gtf$num_TA <- countRnodeHits(h)
+	
+	n <- assay(ta,"counts")[queryHits(h),]
+	total <- Matrix::sparseMatrix(
+		i = subjectHits(h)[row(n)],
+		j = as.vector(col(n)),
+		x = as.vector(n),
+		dims = c(nRnode(h),ncol(n))
+	)
+	detected <- Matrix::sparseMatrix(
+		i = subjectHits(h)[row(n)],
+		j = as.vector(col(n)),
+		x = as.vector((n>0) + 0L),
+		dims = c(nRnode(h),ncol(n))
+	)
+	
+	SummarizedExperiment(
+		list(total = total,detected=detected),
+		rowRanges = gtf,
+		colData = colData(ta)
+	)	
+}
+GTF <- per_gene_stats(ta,gtf)
+```
+
+```{r fig.height=20, fig.width=20}
+local({
+	#GTF <- GTF[rowData(GTF)$num_TA >= 5]
+	pairs(as.matrix(assay(GTF,"detected")) / rowData(GTF)$num_TA,lower.panel = NULL)
+})
+```
+
+
+# Stats on consecutive TA
+```{r}
+
+```
 
 
 
