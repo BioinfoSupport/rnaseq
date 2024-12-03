@@ -2,7 +2,7 @@
 title: "Cutadapt Quality Control"
 output: html_document
 params:
-  cutadapt_dir: "data/fastq/soldati/tnseq/Foulon_fastq"
+  cutadapt_dir: "data/fastq/soldati/tnseq/20241105_Foulon_Tnseq_Dsc_Lowbinders"
 ---
 
 The `.fastq.gz` files you receive from the genomic platform contains the sequenced reads.

@@ -141,12 +141,29 @@ ta_sites <- function(x,fa) {
 ta <- ta_sites(x,fa)
 ```
 
+# Add metadata
+```{r}
+ta$lib <- colnames(ta)
+ta$cond <- case_when(
+	ta$lib %in% c("20230001_S1_L002","20230002_S2_L002","20230003_S3_L002","20230004_S4_L002") ~ "t0",
+	ta$lib %in% c("20230005_S5_L002","20230006_S6_L002","20230007_S7_L002","20230008_S8_L002") ~ "t1",
+	ta$lib %in% c("20230009_S9_L002","20230010_S10_L002","20230011_S11_L002","20230012_S12_L002") ~ "t2",
+	ta$lib %in% c("20230013_S13_L002","20230014_S14_L002","20230015_S15_L002","20230016_S16_L002") ~ "t3"
+)
+```
+
+
 # Normalize
 ```{r}
 assay(ta,"counts") <- pmin(assay(ta,"fwd"),assay(ta,"rev"))
 ta$norm_factor <- 1e6 / colSums(assay(ta,"counts"))
 assay(ta,"norm") <- scale(assay(ta,"counts"),center = FALSE,scale = 1/ta$norm_factor)
+assays(ta) <- assays(ta)[c("counts",setdiff(assayNames(ta),"counts"))]
 ```
+
+
+
+
 
 
 
@@ -189,8 +206,18 @@ local({
 
 # Stats on consecutive TA
 ```{r}
-
+granges(ta)
 ```
+
+
+
+
+```{r}
+saveRDS(ta,"out/TA_lowbinder.rds")
+saveRDS(GTF,"out/GTF_lowbinder.rds")
+```
+
+
 
 
 

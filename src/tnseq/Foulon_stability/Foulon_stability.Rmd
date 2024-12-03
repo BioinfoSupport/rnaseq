@@ -1,0 +1,46 @@
+---
+title: "Foulon stability"
+output: html_document
+date: "2024-04-12"
+params:
+  quantif_rds: "data/fastq/Foulon_fastq/Mm.ht2.tn.quantif/robj.rds"
+  genome_dir: "data/ref/Mm"
+---
+
+```{r,message=FALSE,include=FALSE}
+library(Rsamtools)
+library(SummarizedExperiment)
+library(tidyverse)
+library(reshape2)
+library(rtracklayer)
+library(GenomicRanges)
+```
+
+```{r echo=FALSE}
+x <- readRDS(params$quantif_rds)
+gff <- import.gff(file.path(params$genome_dir,"genome.gff.gz"),feature.type="gene")
+
+# Add overlapping genes
+h <- findOverlaps(rowRanges(x),GRanges(gff),type="within")
+rowData(x)$gene_IDs <- extractList(gff$ID,as(h,"IntegerList"))
+
+
+# head(gff)
+
+x$num_inserted_TA <- colSums(assays(x)$counts>0)
+x$num_in_TA <- colSums(assays(x)$counts)
+
+# Helper function to extract a data.frame of all gene-expression values
+# suitable to display a heatmap
+makeAssayDF <- function(x,assay_idx="counts",col_meta=colnames(colData(x)),row_meta=character(0)) {
+  assay(x,assay_idx) |>
+    as.data.frame() |>
+    rownames_to_column("row_id") |>
+    pivot_longer(!row_id,names_to = "col_id") |>
+    full_join(as(colData(x)[col_meta],"data.frame") |> rownames_to_column("col_id"),by="col_id") |> # Add all colData
+    full_join(as(rowData(x)[row_meta],"data.frame") |> rownames_to_column("row_id"),by="row_id") |> # Add all rowData
+    mutate(row_id=factor(row_id,rownames(x)),col_id=factor(col_id,colnames(x)))
+}
+
+
+```

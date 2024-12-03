@@ -1,0 +1,98 @@
+---
+title: "Tn insertions"
+output: html_document
+params:
+  genome_dir: "data/ref/Mm"
+  input_dir: "data/fastq/soldati/tnseq/2023_Foulon_Tnseq"
+---
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+library(Rsamtools)
+library(SummarizedExperiment)
+library(rtracklayer)
+library(tidyverse)
+library(DESeq2)
+```
+
+```{r}
+fa <- FaFile(file.path(params$genome_dir,"genome.fasta"))
+gtf <- rtracklayer::import(file.path(params$genome_dir,"genome.gtf.gz"),genome=seqinfo(fa),feature.type="gene")
+GTF <- readRDS("out/GTF_lowbinder.rds")
+ta <- readRDS("out/TA_lowbinder.rds")
+```
+
+
+# Differential Gene expression analysis
+
+```{r}
+assay(GTF,"counts") <- as.matrix(assay(GTF,"total"))
+assays(GTF) <- assays(GTF)[c("counts",setdiff(assayNames(GTF),"counts"))]
+deseq <- DESeqDataSet(GTF,~cond) |>
+	DESeq()
+rownames(deseq) <- paste(granges(deseq)$gene_id,granges(deseq)$old_locus_tag,granges(deseq)$gene_name,sep=" / ")
+
+all_deseq_results <- list(
+	t3vst0 = as.data.frame(results(deseq,c("cond","t3","t0"))),
+	t2vst0 = as.data.frame(results(deseq,c("cond","t2","t0"))),
+	t1vst0 = as.data.frame(results(deseq,c("cond","t1","t0"))),
+	t2vst1 = as.data.frame(results(deseq,c("cond","t2","t1"))),
+	t3vst2 = as.data.frame(results(deseq,c("cond","t3","t2")))
+) |>
+	map(~rownames_to_column(as.data.frame(.),"feature_id")) |>
+  bind_rows(.id = "comparison") |>
+  mutate(direction = case_when(
+    log2FoldChange >= +0.2 & padj <= 0.05 ~ "up",
+    log2FoldChange <= -0.2 & padj <= 0.05 ~ "down",
+    TRUE ~ "ns"
+  ))
+```
+
+
+
+
+```{r fig.height=6, fig.width=15}
+all_deseq_results |>
+	filter(comparison %in% c("t1vst0","t2vst0","t3vst0")) |>
+	ggplot(aes(x=log2FoldChange,y=-log10(padj),color=direction)) + 
+		ggrepel::geom_text_repel(aes(label=feature_id),data = ~filter(.,direction!="ns"),size=3,max.overlaps = 10) + 
+		geom_point(size=1) + 
+		facet_wrap(~comparison) + 
+		scale_y_continuous(limits=c(0,10),oob=scales::squish) +
+		scale_x_continuous(limits=c(-2,2),oob=scales::squish)
+```
+
+```{r}
+all_deseq_results |>
+	filter(direction=="up") |>
+	arrange(pvalue)
+```
+
+```{r}
+rownames(ta) <- as.character(granges(ta))
+
+TA <- subsetByOverlaps(ta,gtf[gtf$old_locus_tag %in% "MMAR_4043"])
+W <- assay(TA,"norm") |>
+	as.data.frame() |>
+	rownames_to_column("ta_pos") |>
+	pivot_longer(!ta_pos,names_to = "lib") |>
+	left_join(as.data.frame(colData(ta)),by="lib") |>
+	left_join(as.data.frame(rowRanges(ta)) |> rownames_to_column("ta_pos") |> select(!width),by="ta_pos")
+
+	
+ggplot(W,aes(x=(start+end)/2,y=value,color=cond)) + 
+	geom_point() + 
+	stat_summary(geom="line",aes(group=cond)) + 
+	ggtitle("MMAR_4043")
+
+ggsave("out/tnseq_MMAR_4043.pdf")
+```
+
+

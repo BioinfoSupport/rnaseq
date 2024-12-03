@@ -1,0 +1,119 @@
+---
+title: "TA analysis"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo = FALSE
+)
+library(Rsamtools)
+library(SummarizedExperiment)
+library(rtracklayer)
+library(tidyverse)
+library(DESeq2)
+```
+
+
+```{r}
+ta <- readRDS("out/TA_lowbinder.rds")
+```
+
+# Differential TA expression analysis
+
+```{r}
+assay(ta,"counts") <- as.matrix(assay(ta,"counts"))
+deseq <- DESeqDataSet(ta,~cond) |>
+	DESeq()
+rownames(deseq) <- as.character(granges(deseq))
+
+all_deseq_results <- list(
+	t3vst0 = as.data.frame(results(deseq,c("cond","t3","t0"))),
+	t2vst0 = as.data.frame(results(deseq,c("cond","t2","t0"))),
+	t1vst0 = as.data.frame(results(deseq,c("cond","t1","t0"))),
+	t2vst1 = as.data.frame(results(deseq,c("cond","t2","t1"))),
+	t3vst2 = as.data.frame(results(deseq,c("cond","t3","t2")))
+) |>
+	map(~rownames_to_column(as.data.frame(.),"ta_position")) |>
+  bind_rows(.id = "comparison") |>
+  mutate(direction = case_when(
+    log2FoldChange >= +1 & padj <= 0.05 ~ "up",
+    log2FoldChange <= -1 & padj <= 0.05 ~ "down",
+    TRUE ~ "ns"
+  ))
+```
+
+
+```{r}
+all_deseq_results_annotated <- local({
+	h <- findOverlaps(ta,gtf,type = "within")
+	mcols(h)$ta_position <- as.character(granges(ta))[queryHits(h)]
+	mcols(h)$gene_id <- gtf$gene_id[subjectHits(h)]
+	mcols(h)$old_locus_tag <- gtf$old_locus_tag[subjectHits(h)]
+	mcols(h)$gene_id <- gtf$gene_id[subjectHits(h)]
+	mcols(h)$gene_name <- gtf$gene[subjectHits(h)]
+	all_deseq_results |>
+		left_join(as.data.frame(mcols(h)),by="ta_position") |>
+		mutate(feature_id = str_c(ta_position,str_replace_na(gene_id,"."),str_replace_na(gene_name,"."),sep = " / "))
+})
+```
+
+
+```{r fig.height=6, fig.width=15}
+all_deseq_results_annotated |>
+	filter(comparison %in% c("t1vst0","t2vst0","t3vst0")) |>
+	ggplot(aes(x=log2FoldChange,y=-log10(padj),color=direction)) + 
+		ggrepel::geom_text_repel(aes(label=gene_name),data = ~filter(.,direction!="ns"),size=3,max.overlaps = 25) + 
+		geom_point(size=1) + 
+		facet_wrap(~comparison) + 
+		scale_y_continuous(limits=c(0,10),oob=scales::squish)
+```
+
+
+
+```{r}
+all_deseq_results_annotated |>
+	filter(comparison %in% c("t1vst0","t2vst1")) |>
+	pivot_wider(id_cols="feature_id",names_from = "comparison",values_from = c("log2FoldChange","direction")) |>
+	ggplot(aes(x=log2FoldChange_t1vst0,y=log2FoldChange_t2vst1)) + 
+		geom_point(size=0.3) +
+		coord_equal()
+```
+
+
+
+```{r fig.height=20, fig.width=7}
+all_deseq_results_annotated |>
+	filter(comparison %in% c("t1vst0","t2vst1","t3vst2")) |>
+	group_by(feature_id) |>
+	filter(sum(log2FoldChange>0.3)>=3) |>
+	ggplot() + 
+		geom_tile(aes(x=comparison,y=feature_id,fill=log2FoldChange)) + 
+		scale_fill_gradient2(limits=c(0,3),oob=scales::squish)
+```
+
+
+
+
+```{r}
+all_deseq_results_annotated |>
+	filter(comparison %in% "t3vst0") |>
+	mutate(direction = case_when(
+    log2FoldChange >= +1 & pvalue <= 0.05 ~ "up",
+    log2FoldChange <= -1 & pvalue <= 0.05 ~ "down",
+    TRUE ~ "ns"
+  )) |>
+	group_by(gene_id,gene_name,direction) |>
+	summarise(n = n()) |>
+	group_by(gene_id,gene_name) |>
+	mutate(N=sum(n)) |>
+	filter(direction=="up") |>
+	arrange(desc(n))
+```
+
+
+
