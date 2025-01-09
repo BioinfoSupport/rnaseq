@@ -75,9 +75,11 @@ all_deseq_results |>
 	arrange(pvalue)
 ```
 
+# Display TA profile on a gene
 ```{r}
 rownames(ta) <- as.character(granges(ta))
 
+# Select TA in a gene
 TA <- subsetByOverlaps(ta,gtf[gtf$old_locus_tag %in% "MMAR_4043"])
 W <- assay(TA,"norm") |>
 	as.data.frame() |>
@@ -87,12 +89,22 @@ W <- assay(TA,"norm") |>
 	left_join(as.data.frame(rowRanges(ta)) |> rownames_to_column("ta_pos") |> select(!width),by="ta_pos")
 
 	
+# Show absolute normalized values
 ggplot(W,aes(x=(start+end)/2,y=value,color=cond)) + 
 	geom_point() + 
 	stat_summary(geom="line",aes(group=cond)) + 
 	ggtitle("MMAR_4043")
-
 ggsave("out/tnseq_MMAR_4043.pdf")
+
+# Show with normalized values
+W |>
+	group_by(ta_pos) |>
+	mutate(value = log2(value+1) - mean(log2(value[cond=="t0"]+1))) |>
+	ggplot(aes(x=(start+end)/2,y=value,color=cond)) + 
+		geom_point() + 
+		stat_summary(geom="line",aes(group=cond)) + 
+		ggtitle("MMAR_4043")
+ggsave("out/tnseq_MMAR_4043_pct.pdf")
 ```
 
 
