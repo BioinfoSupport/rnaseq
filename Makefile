@@ -47,8 +47,8 @@ TESTS:
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
 # import external rules
 #-#-#-#-#-#-#-#-#-#-#-#-#-#
-#include $(LOCALDIR)/Makefile.rnaseq
-include $(LOCALDIR)/Makefile.tnseq
+include $(LOCALDIR)/Makefile.rnaseq
+#include $(LOCALDIR)/Makefile.tnseq
 
 
 

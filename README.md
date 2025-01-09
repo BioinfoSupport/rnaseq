@@ -58,10 +58,10 @@ docker compose up -d
 docker compose exec rnaseq make TESTS
 
 # Map and quantify all .fastq.gz files located in data/fastq/pilot
-docker compose exec rnaseq make data/fastq/pilot/all
+docker compose exec rnaseq make data/fastq/pilot/RNASEQ.ALL
 
 # Run alignment and quantification on FASTQ in folder data/fastq on genome Dd+Mm (with automatic download of the genome)
-docker compose exec rnaseq make GENOME=Dd+Mm data/fastq/test/all
+docker compose exec rnaseq make GENOME=Dd+Mm data/fastq/test/RNASEQ.ALL
 
 # Get a Bash in the container
 docker compose exec rnaseq bash

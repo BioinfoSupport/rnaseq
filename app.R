@@ -35,7 +35,7 @@ ui <- dashboardPage(dark = NULL,help = NULL,
 				tabName = "rnaseq",
 				fluidRow(
 					box(title="Run",width=12,collapsible = FALSE,
-							selectInput("rnaseq_genome","GENOME",choices = c("Dd+Mm","Dd","Mm","GRCh38-r45","GRCm39-M34")),
+							selectInput("rnaseq_genome","GENOME",choices = c("ensembl-GRCh38-110","ensembl-GRCm39-110","Dd+Mm","Dd","Mm","gencode-GRCh38-r45","gencode-GRCm39-M34")),
 							textInput("rnaseq_fastq_dir","FASTQ directory",value = "data/fastq/"),
 							actionButton("run_rnaseq","Run",icon=icon("play")),
 							verbatimTextOutput("rnseq_terminal_stdout")
